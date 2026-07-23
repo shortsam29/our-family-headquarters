@@ -53,7 +53,26 @@ export default function Sidebar() {
         </ul>
       </nav>
       <div className={styles.sidebarWelcome} aria-hidden="true">
-        <div className={styles.plant}><i /><i /><i /><i /><i /></div>
+        <svg
+          className={styles.plantIllustration}
+          viewBox="0 0 150 250"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <ellipse cx="75" cy="229" rx="55" ry="8" fill="currentColor" opacity=".09" />
+          <path d="M75 176V35" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          <path d="M75 72C58 62 48 49 42 34M75 102C94 91 106 77 113 59M75 128C56 119 42 105 35 88M75 151C94 141 108 126 116 109" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          <path d="M43 35C26 31 17 39 18 51C31 56 42 50 43 35Z" fill="var(--color-sage)" />
+          <path d="M112 59C128 54 138 61 138 73C126 80 114 74 112 59Z" fill="var(--color-accent-sage)" />
+          <path d="M36 88C19 84 10 92 12 105C25 110 36 103 36 88Z" fill="var(--color-deep-olive)" opacity=".78" />
+          <path d="M115 109C132 104 142 112 140 125C127 131 116 124 115 109Z" fill="var(--color-sage)" />
+          <path d="M75 76C89 70 96 58 95 45C82 43 74 55 75 76Z" fill="var(--color-light-sage)" />
+          <path d="M75 118C60 112 52 100 53 87C67 85 75 97 75 118Z" fill="var(--color-accent-sage)" />
+          <path d="M75 145C88 139 95 128 94 116C82 114 74 125 75 145Z" fill="var(--color-light-sage)" />
+          <path d="M42 169H108L101 218C99 228 90 235 80 235H70C60 235 51 228 49 218L42 169Z" fill="var(--color-warm-taupe)" />
+          <path d="M39 168C39 162 44 158 50 158H100C106 158 111 162 111 168V174H39V168Z" fill="var(--color-soft-white)" stroke="var(--color-border)" strokeWidth="2" />
+          <path d="M54 188C66 193 84 193 96 188" stroke="var(--color-soft-white)" strokeWidth="2" opacity=".65" strokeLinecap="round" />
+        </svg>
         <span>♡</span>
         <p>Building a life we love,<br />together.</p>
         <div className={styles.sprig} />

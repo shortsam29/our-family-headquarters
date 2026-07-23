@@ -12,10 +12,7 @@
 .sidebarWelcome { display: flex; flex-direction: column; align-items: center; margin-top: clamp(120px,18vh,210px); color: var(--color-deep-olive); text-align: center; }
 .sidebarWelcome > span { color: var(--color-dusty-rose); }
 .sidebarWelcome p { margin: 10px 0; font-family: var(--font-family-brand); font-size: 1.05rem; font-style: italic; line-height: 1.5; }
-.plant { position: relative; width: 86px; height: 145px; margin-bottom: 12px; border-bottom: 44px solid #cbbda9; border-radius: 0 0 28px 28px; }
-.plant::before { position:absolute; bottom:38px; left:42px; width:2px; height:100px; background:var(--color-sage); content:""; }
-.plant i { position:absolute; width:36px; height:16px; background:#9da78e; border-radius:100% 0; transform-origin:right center; }
-.plant i:nth-child(1){left:8px;top:25px;transform:rotate(25deg)} .plant i:nth-child(2){right:5px;top:42px;transform:rotate(150deg)} .plant i:nth-child(3){left:10px;top:66px;transform:rotate(18deg)} .plant i:nth-child(4){right:7px;top:82px;transform:rotate(160deg)} .plant i:nth-child(5){left:15px;top:104px;transform:rotate(20deg)}
+.plantIllustration { display: block; width: 132px; height: auto; margin-bottom: 8px; color: var(--color-deep-olive); filter: drop-shadow(0 10px 10px rgba(92,76,58,.08)); }
 .sprig { width:80px; height:1px; background:linear-gradient(90deg,transparent,var(--color-sage),transparent); }
 @media (min-width:821px){.sidebar{position:sticky;top:0;min-height:calc(100vh - 76px)}}
 @media (max-width:820px){
