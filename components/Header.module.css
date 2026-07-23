@@ -1,0 +1,24 @@
+.header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px clamp(20px, 3vw, 44px);
+  background: rgba(255, 253, 250, .96);
+  border-bottom: 1px solid rgba(184, 170, 154, .38);
+  box-shadow: 0 4px 16px rgba(75, 64, 48, .06);
+}
+.brand { color: var(--color-deep-olive); font-size: clamp(1.85rem, 2.5vw, 2.35rem); font-weight: 600; line-height: 1; text-align: center; }
+.userMenu { position: absolute; right: clamp(18px, 3vw, 42px); display: flex; min-height: 44px; align-items: center; gap: 9px; padding: 5px 14px 5px 6px; color: var(--color-text-primary); background: rgba(242,239,232,.92); border: 1px solid rgba(184,170,154,.24); border-radius: 999px; font: inherit; font-size: .88rem; font-weight: 700; cursor: pointer; }
+.userMenu:hover { background: var(--color-surface-sage); }
+.userMenu:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.avatar { display: grid; width: 32px; height: 32px; place-items: center; color: white; background: var(--color-warm-taupe); border-radius: 50%; font-size: .72rem; }
+.chevron { font-size: 1rem; }
+@media (max-width: 620px) {
+  .header { min-height: 68px; justify-content: flex-start; padding-right: 124px; }
+  .brand { font-size: clamp(1.3rem, 6vw, 1.65rem); text-align: left; }
+  .userMenu { right: 12px; padding-right: 10px; }
+  .userMenu > span:nth-child(2) { display: none; }
+}

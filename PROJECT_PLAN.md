@@ -38,24 +38,32 @@ Do not create `lib/` or `types/` yet unless they already exist.
 
 - [x] Milestone 1: Development environment and initial application shell
 - [x] Milestone 2: Sidebar navigation and responsive application layout
-- [ ] Milestone 3: Dashboard page
-- [ ] Milestone 4: Planning section
-- [ ] Milestone 5: Household section
-- [ ] Milestone 6: Family section
-- [ ] Milestone 7: Finance section
-- [ ] Milestone 8: Documents section
-- [ ] Milestone 9: Settings and user preferences
-- [ ] Milestone 10: Authentication and Supabase integration
-- [ ] Milestone 11: Testing, accessibility, and deployment
+- [x] Milestone 3: Design system and visual foundation
+- [ ] Milestone 4: Dashboard page
+- [ ] Milestone 5: Planning section
+- [ ] Milestone 6: Household section
+- [ ] Milestone 7: Family section
+- [ ] Milestone 8: Finance section
+- [ ] Milestone 9: Documents section
+- [ ] Milestone 10: Settings and user preferences
+- [ ] Milestone 11: Authentication and Supabase integration
+- [ ] Milestone 12: Testing, accessibility, and deployment
+
+Milestone 3 will establish the shared visual foundation before additional feature pages are built. It will define color tokens, typography, spacing, borders, shadows, buttons, cards, navigation states, and responsive design conventions.
 
 ## Current Status
 
-Milestones 1 and 2 are complete. The current application includes:
+Milestones 1 through 3 are complete. The current application includes:
 
 - A reusable Header component
 - A reusable Sidebar component with primary navigation
 - A responsive application shell with the Header at the top, Sidebar on the left, and main content area
 - A small-screen layout that stacks the Sidebar above the main content
+- Centralized semantic design tokens for color, typography, spacing, shape, elevation, motion, and layout
+- Optimized Manrope interface typography and Cormorant Garamond brand typography
+- A typed reusable design-system component library
+- Illustration infrastructure and accessibility guidance without final artwork
+- A development-only design-system preview at `/design-system`
 - Successful TypeScript validation
 - Successful production build
 - A working development server at http://localhost:3000

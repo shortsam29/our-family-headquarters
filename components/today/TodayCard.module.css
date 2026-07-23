@@ -1,0 +1,32 @@
+﻿.card {
+  height: 100%;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail {
+  color: var(--color-deep-olive);
+  font-family: var(--font-family-brand);
+  font-size: 1.65rem;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}
+
+.content {
+  color: var(--color-text-secondary);
+}
