@@ -134,7 +134,9 @@ Card hierarchy is intentional rather than uniform:
 
 Primary cards receive more space and stronger hierarchy. Secondary cards remain useful but visually quieter. Supporting cards are compact previews with restrained palette accents.
 
-The desktop daily-life composition follows the approved home-planner rhythm: Weather, Today’s Schedule, and Dinner Tonight share the first practical row; the prominent checklist anchors the next region beside Kenzie’s stationery note; compact household previews sit beneath Kenzie. At narrower widths, these regions stack in semantic reading order without changing their importance.
+The desktop daily-life composition follows the approved home-planner rhythm: Weather, Today’s Schedule, and Dinner Tonight share the first practical row; the prominent checklist anchors the next region beside Kenzie’s stationery note; Shopping List, Grocery List, Family Inbox, and Coming Up form a distinct full-width supporting row. At narrower widths, these regions stack in semantic reading order without changing their importance.
+
+Today’s Headquarters uses four visually distinct vertical regions: the quiet application header; the current-room entrance formed by the sidebar and welcome hero; the primary daily dashboard; and supporting household information. Spacing and subtle dividers establish these regions without adding unnecessary headings or enclosing the welcome in a card.
 
 ## Component Standards
 
@@ -218,3 +220,4 @@ _Placeholder: Define guidelines that ensure future features remain consistent wi
 | --- | --- | --- |
 | 0.1 | 2026-07-22 | Initial document structure created. |
 | 0.4 | 2026-07-23 | Recorded the approved Today’s Headquarters mockup composition, sidebar identity, and responsive daily-life layout. |
+| 0.5 | 2026-07-23 | Established the permanent four-region page blueprint and full-width supporting household row. |
