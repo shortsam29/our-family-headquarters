@@ -39,7 +39,7 @@ Do not create `lib/` or `types/` yet unless they already exist.
 - [x] Milestone 1: Development environment and initial application shell
 - [x] Milestone 2: Sidebar navigation and responsive application layout
 - [x] Milestone 3: Design system and visual foundation
-- [ ] Milestone 4: Dashboard page
+- [x] Milestone 4: Dashboard page and primary experience foundation
 - [ ] Milestone 5: Planning section
 - [ ] Milestone 6: Household section
 - [ ] Milestone 7: Family section
@@ -68,11 +68,17 @@ Milestones 1 through 3 are complete. The current application includes:
 - A browser-local, hydration-safe Today date
 - Reusable populated, empty, loading, and error states for Today sections
 - An accessible, session-only interactive Today’s To-Do preview for the current family member
+- A shared route-aware application shell for Today’s Headquarters, Schedule, Family Hub, My Day, More, and approved secondary overview rooms
+- Typed, centralized mock contracts that preserve household-shared, member-specific, and permission-aware boundaries
+- Populated Schedule, Family Hub, My Day, and More experiences with calm alternate-state support
+- Lightweight overview routes for Meals, Shopping, Household Care, Pets, Contacts, Vehicles, Family Vault, Household Finances, and Household Preferences
+- Vitest and React Testing Library coverage for date formatting, task interaction, navigation state, Schedule behavior, and empty states
+- Playwright coverage for the critical primary-navigation and mobile-overflow flow
 - Successful TypeScript validation
 - Successful production build
 - A working development server at http://localhost:3000
 
-Milestone 4B is in review. Its current scope establishes the functional Today experience foundation without backend persistence, authentication, or future feature routes.
+Milestone 4 frontend work is in product-owner review. It establishes Today’s Headquarters and all approved primary navigation destinations as a cohesive frontend product without backend persistence, authentication, or external integrations.
 
 ## Engineering Rules
 

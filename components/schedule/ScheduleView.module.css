@@ -1,0 +1,99 @@
+.toolbar {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.viewButton {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-5);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.viewButton[aria-pressed="true"] {
+  color: var(--color-soft-white);
+  background: var(--color-deep-olive);
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(120px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.day {
+  min-height: 260px;
+  padding: var(--space-4);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-medium);
+}
+
+.currentDay {
+  background: var(--color-surface-sage);
+  border-color: var(--color-sage);
+}
+
+.day h3 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--font-size-label);
+}
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event {
+  padding: var(--space-4);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-left: 5px solid var(--color-sage);
+  border-radius: var(--radius-medium);
+}
+
+.event[data-category="school"] { border-left-color: var(--color-muted-blue-gray); }
+.event[data-category="appointment"] { border-left-color: var(--color-dusty-rose); }
+.event[data-category="celebration"] { border-left-color: var(--color-warm-taupe); }
+
+.event h3 {
+  margin: 0;
+}
+
+.event p {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+}
+
+.eventMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    display: flex;
+  }
+
+  .viewButton {
+    flex: 1;
+  }
+}

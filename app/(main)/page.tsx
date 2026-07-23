@@ -1,5 +1,3 @@
-import Header from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
 import { Card, KenzieNote } from "@/components/design-system";
 import LocalDate from "@/components/today/LocalDate";
 import TodayCard from "@/components/today/TodayCard";
@@ -31,11 +29,7 @@ function HouseholdPreviewCard({ item }: { item: HouseholdPreview }) {
 
 export default function Home() {
   return (
-    <>
-      <Header />
-      <div className={styles.applicationShell}>
-        <Sidebar />
-        <main className={styles.mainContent}>
+    <main className={styles.mainContent}>
           <div className={styles.todayPage}>
             <header className={styles.welcome}>
               <p className={styles.todayLabel}>Today</p>
@@ -145,8 +139,6 @@ export default function Home() {
               </div>
             </section>
           </div>
-        </main>
-      </div>
-    </>
+    </main>
   );
 }

@@ -153,6 +153,10 @@ Shared components live in `components/design-system` and use typed, maintainable
 - Kenzie notes use a restrained stationery treatment: warm paper, faint blue-gray ruled lines, a dusty-rose margin, subtle paper tape, serif titles, Patrick Hand messages, and a handwritten signature. The effect should feel personal and integrated, never like an AI feature panel.
 - Navigation uses rounded links, a soft selected state, and responsive wrapping on small screens.
 - Primary navigation follows the approved household rhythm: Today’s Headquarters, Schedule, Family Hub, My Day, and More.
+- All primary rooms share one warm application shell. Navigation uses real routes, announces the current page programmatically, and keeps More selected while a secondary household room is open.
+- Feature rooms use a consistent emotional sequence: a clear identity and calm orientation, primary content, supporting context, and only meaningful actions. Reusable summary cards and responsive grids keep those rooms related without making every screen identical.
+- Schedule, Family Hub, My Day, and secondary household rooms use the same calm populated, empty, loading, and error language established for Today’s Headquarters. Loading respects reduced motion, and errors never imply that the household itself is broken.
+- My Day may feel personal and encouraging while remaining visually part of the shared home. Family Hub remains relational rather than administrative, and permission-sensitive areas reveal only safe summaries.
 - Today’s Headquarters receives a distinct sage selected treatment to communicate that it is the familiar starting place for the household without making it visually loud.
 - Today summary cards use a reusable heading pattern with an optional eyebrow and concise detail area. Each card presents one idea and avoids embedding business logic.
 - Today’s To-Do List is a primary daily surface. On Today’s Headquarters it presents an encouraging checklist preview for chores, homework, personal tasks, and recurring routines while preserving the complete task experience for its owning screen.
@@ -227,3 +231,4 @@ _Placeholder: Define guidelines that ensure future features remain consistent wi
 | 0.4 | 2026-07-23 | Recorded the approved Today’s Headquarters mockup composition, sidebar identity, and responsive daily-life layout. |
 | 0.5 | 2026-07-23 | Established the permanent four-region page blueprint and full-width supporting household row. |
 | 0.6 | 2026-07-23 | Added permanent Today state, personalization-boundary, local-date, and accessible task-interaction standards. |
+| 0.7 | 2026-07-23 | Recorded the shared routed shell, feature-room structure, route-aware navigation, and calm cross-application state standards. |
