@@ -8,15 +8,31 @@ import styles from "./TodayToDoCard.module.css";
 
 type TodayToDoCardProps = {
   state: SectionState<TodayTask[]>;
+  onToggle?: (taskId: string, completed: boolean) => Promise<{ ok: boolean; message?: string }>;
 };
 
-export default function TodayToDoCard({ state }: TodayToDoCardProps) {
+export default function TodayToDoCard({ state, onToggle }: TodayToDoCardProps) {
   const [tasks, setTasks] = useState(state.status === "populated" ? state.data : []);
+  const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
+  const [mutationMessage, setMutationMessage] = useState<string | null>(null);
 
   const displayState: SectionState<TodayTask[]> =
     state.status === "populated" ? { status: "populated", data: tasks } : state;
 
-  const toggleTask = (taskId: string) => {
+  const toggleTask = async (taskId: string) => {
+    const task = tasks.find((candidate) => candidate.id === taskId);
+    if (!task || pendingTaskId) return;
+    const nextCompleted = !task.completed;
+    if (onToggle) {
+      setPendingTaskId(taskId);
+      setMutationMessage(null);
+      const result = await onToggle(taskId, nextCompleted);
+      setPendingTaskId(null);
+      if (!result.ok) {
+        setMutationMessage(result.message ?? "That task wasn’t changed.");
+        return;
+      }
+    }
     setTasks((current) =>
       current.map((task) => (task.id === taskId ? { ...task, completed: !task.completed } : task)),
     );
@@ -67,6 +83,7 @@ export default function TodayToDoCard({ state }: TodayToDoCardProps) {
                         className={styles.taskToggle}
                         aria-pressed={task.completed}
                         aria-label={`${task.completed ? "Mark incomplete" : "Mark complete"}: ${task.title}`}
+                        disabled={pendingTaskId === task.id}
                         onClick={() => toggleTask(task.id)}
                       >
                         <span className={styles.checkmark} aria-hidden="true">{task.completed ? "✓" : ""}</span>
@@ -84,6 +101,7 @@ export default function TodayToDoCard({ state }: TodayToDoCardProps) {
                 <p className={styles.supportingNote}>
                   {allComplete ? "Today’s complete." : "One step at a time."}
                 </p>
+                {mutationMessage ? <p role="alert">{mutationMessage}</p> : null}
               </>
             );
           }}

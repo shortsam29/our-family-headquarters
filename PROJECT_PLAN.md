@@ -74,11 +74,18 @@ Milestones 1 through 3 are complete. The current application includes:
 - Lightweight overview routes for Meals, Shopping, Household Care, Pets, Contacts, Vehicles, Family Vault, Household Finances, and Household Preferences
 - Vitest and React Testing Library coverage for date formatting, task interaction, navigation state, Schedule behavior, and empty states
 - Playwright coverage for the critical primary-navigation and mobile-overflow flow
+- A Supabase/PostgreSQL migration foundation for households, memberships, family members, schedules, tasks, assignments, completions, and Row-Level Security
+- Email/password sign-in, sign-out, session refresh, and protected-route foundations
+- Server-side household context plus household-scoped repositories for Today, Schedule, My Day, and Family Hub
+- Persistent current-member task completion with confirmed server-side mutations
+- Honest setup and empty states when a persistent domain has not been configured
 - Successful TypeScript validation
 - Successful production build
 - A working development server at http://localhost:3000
 
 Milestone 4 frontend work is in product-owner review. It establishes Today’s Headquarters and all approved primary navigation destinations as a cohesive frontend product without backend persistence, authentication, or external integrations.
+
+Milestone 5A is in implementation review. The secure backend foundation is code-complete where possible without product-owner Supabase credentials. Database application, live authentication verification, security-policy integration tests, and production deployment remain configuration-dependent and are not marked complete.
 
 ## Engineering Rules
 

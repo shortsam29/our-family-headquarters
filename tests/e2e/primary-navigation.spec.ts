@@ -86,3 +86,12 @@ test("primary navigation and task controls work from the keyboard", async ({ pag
   await taskButton.press("Space");
   await expect(taskButton).toHaveAttribute("aria-pressed", "false");
 });
+
+test("sign-out control reaches the accessible sign-in screen", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page).toHaveURL("/sign-in");
+  await expect(page.getByRole("heading", { name: "Sign in to your family home" })).toBeVisible();
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByLabel("Password")).toBeVisible();
+});

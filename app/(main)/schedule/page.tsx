@@ -2,10 +2,13 @@ import { KenzieNote } from "@/components/design-system";
 import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, SummaryCard } from "@/components/features/FeaturePage";
 import ScheduleView from "@/components/schedule/ScheduleView";
 import TodaySectionState from "@/components/today/TodaySectionState";
-import { scheduleEvents } from "@/lib/features/mock-data";
+import { requireCurrentHouseholdContext } from "@/lib/auth/context";
+import { getScheduleData } from "@/lib/data/core";
 
-export default function SchedulePage() {
-  const state = { status: "populated" as const, data: scheduleEvents };
+export default async function SchedulePage() {
+  const context = await requireCurrentHouseholdContext();
+  const state = await getScheduleData(context);
+  const events = state.status === "populated" ? state.data : [];
 
   return (
     <FeaturePage>
@@ -13,9 +16,9 @@ export default function SchedulePage() {
 
       <FeatureSection title="At a glance" description="Household commitments stay authoritative here while Today and My Day show relevant references.">
         <ResponsiveGrid columns={3}>
-          <SummaryCard title="Today" detail="2 scheduled events" variant="sage" />
-          <SummaryCard title="All-day items" detail="2 this week" variant="neutral" />
-          <SummaryCard title="Relevant to you" detail="3 upcoming events" variant="blush" />
+          <SummaryCard title="Scheduled" detail={`${events.length} visible events`} variant="sage" />
+          <SummaryCard title="All-day items" detail={`${events.filter((event) => event.allDay).length} visible`} variant="neutral" />
+          <SummaryCard title="Relevant to you" detail={`${events.filter((event) => event.participantIds.includes(context.familyMemberId)).length} upcoming events`} variant="blush" />
         </ResponsiveGrid>
       </FeatureSection>
 

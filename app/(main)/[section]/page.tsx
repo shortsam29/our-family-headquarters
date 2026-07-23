@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/design-system";
+import { Badge, EmptyState } from "@/components/design-system";
 import { BackToMore, FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, SummaryCard } from "@/components/features/FeaturePage";
 import { secondaryDestinationBySlug, secondaryDestinations } from "@/lib/features/mock-data";
+import { requireCurrentHouseholdContext } from "@/lib/auth/context";
 
 export function generateStaticParams() {
   return secondaryDestinations.map(({ slug }) => ({ section: slug }));
@@ -11,17 +12,22 @@ export default async function SecondaryOverviewPage({ params }: { params: Promis
   const { section } = await params;
   const destination = secondaryDestinationBySlug.get(section);
   if (!destination) notFound();
+  const context = await requireCurrentHouseholdContext();
 
   return (
     <FeaturePage>
       <FeaturePageHeader eyebrow={destination.eyebrow} title={destination.title} description={destination.description} />
 
       <FeatureSection title="Overview" description="Realistic frontend content demonstrates the approved information boundary without pretending persistence or integrations are active.">
-        <ResponsiveGrid columns={3}>
-          {destination.highlights.map((highlight, index) => (
-            <SummaryCard key={highlight.title} title={highlight.title} detail={highlight.detail} variant={index === 0 ? "sage" : index === 1 ? "blush" : "neutral"} />
-          ))}
-        </ResponsiveGrid>
+        {context.source === "development-fixture" ? (
+          <ResponsiveGrid columns={3}>
+            {destination.highlights.map((highlight, index) => (
+              <SummaryCard key={highlight.title} title={highlight.title} detail={highlight.detail} variant={index === 0 ? "sage" : index === 1 ? "blush" : "neutral"} />
+            ))}
+          </ResponsiveGrid>
+        ) : (
+          <EmptyState title={`${destination.title} is ready for setup`} description={destination.emptyMessage} />
+        )}
       </FeatureSection>
 
       <FeatureSection title="Ownership and access">

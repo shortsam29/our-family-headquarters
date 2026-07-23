@@ -3,16 +3,11 @@ import LocalDate from "@/components/today/LocalDate";
 import TodayCard from "@/components/today/TodayCard";
 import TodaySectionState from "@/components/today/TodaySectionState";
 import TodayToDoCard from "@/components/today/TodayToDoCard";
-import { todayMockData } from "@/lib/today/mock-data";
+import { setTaskCompletion } from "@/app/actions/tasks";
+import { requireCurrentHouseholdContext } from "@/lib/auth/context";
+import { getTodayExperienceData } from "@/lib/data/core";
 import type { HouseholdPreview, SectionState } from "@/types/today";
 import styles from "./page.module.css";
-
-const householdPreviews: SectionState<HouseholdPreview>[] = [
-  todayMockData.shopping,
-  todayMockData.grocery,
-  todayMockData.inbox,
-  todayMockData.upcoming,
-];
 
 function HouseholdPreviewCard({ item }: { item: HouseholdPreview }) {
   return (
@@ -27,7 +22,15 @@ function HouseholdPreviewCard({ item }: { item: HouseholdPreview }) {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const context = await requireCurrentHouseholdContext();
+  const todayData = await getTodayExperienceData(context);
+  const householdPreviews: SectionState<HouseholdPreview>[] = [
+    todayData.shopping,
+    todayData.grocery,
+    todayData.inbox,
+    todayData.upcoming,
+  ];
   return (
     <main className={styles.mainContent}>
           <div className={styles.todayPage}>
@@ -47,7 +50,7 @@ export default function Home() {
               <div className={styles.primaryGrid}>
                 <TodayCard title="Today’s Schedule" eyebrow="Today’s schedule" className={styles.scheduleCard}>
                   <TodaySectionState
-                    state={todayMockData.schedule}
+                    state={todayData.schedule}
                     emptyTitle="No events today"
                     emptyMessage="The day is beautifully open. Nothing has been overlooked."
                     loadingLabel="Checking today’s schedule"
@@ -62,7 +65,7 @@ export default function Home() {
                 </TodayCard>
                 <TodayCard title="Weather" eyebrow="Right now" variant="sage" className={styles.weatherCard}>
                   <TodaySectionState
-                    state={todayMockData.weather}
+                    state={todayData.weather}
                     emptyTitle="Weather is quiet"
                     emptyMessage="There’s no weather summary to show yet."
                     loadingLabel="Checking the weather"
@@ -81,7 +84,7 @@ export default function Home() {
                 </TodayCard>
                 <TodayCard title="Dinner Tonight" eyebrow="Dinner tonight" variant="blush" className={styles.dinnerCard}>
                   <TodaySectionState
-                    state={todayMockData.dinner}
+                    state={todayData.dinner}
                     emptyTitle="Dinner is open"
                     emptyMessage="There’s still plenty of time to choose something simple."
                     loadingLabel="Checking tonight’s plan"
@@ -99,11 +102,14 @@ export default function Home() {
               </div>
 
               <div className={styles.dailyLifeGrid}>
-                <TodayToDoCard state={todayMockData.tasks} />
+                <TodayToDoCard
+                  state={todayData.tasks}
+                  onToggle={context.source === "supabase" ? setTaskCompletion : undefined}
+                />
                 <section className={styles.kenzieSection} aria-labelledby="kenzie-heading">
                   <h2 id="kenzie-heading" className={styles.visuallyHidden}>Kenzie&apos;s daily note</h2>
                   <TodaySectionState
-                    state={todayMockData.kenzie}
+                    state={todayData.kenzie}
                     emptyTitle="A quiet moment"
                     emptyMessage="Kenzie doesn’t have a note for today, and everything else is still here."
                     loadingLabel="Kenzie’s note is on its way"
