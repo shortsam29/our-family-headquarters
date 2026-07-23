@@ -1,22 +1,33 @@
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { Card, KenzieNote } from "@/components/design-system";
+import LocalDate from "@/components/today/LocalDate";
 import TodayCard from "@/components/today/TodayCard";
+import TodaySectionState from "@/components/today/TodaySectionState";
 import TodayToDoCard from "@/components/today/TodayToDoCard";
+import { todayMockData } from "@/lib/today/mock-data";
+import type { HouseholdPreview, SectionState } from "@/types/today";
 import styles from "./page.module.css";
 
-const scheduleItems = [
-  { time: "Morning", label: "A gentle start to the day" },
-  { time: "Afternoon", label: "Family plans will appear here" },
-  { time: "Evening", label: "Time together at home" },
+const householdPreviews: SectionState<HouseholdPreview>[] = [
+  todayMockData.shopping,
+  todayMockData.grocery,
+  todayMockData.inbox,
+  todayMockData.upcoming,
 ];
 
-const previewCards = [
-  { title: "Shopping List", message: "Shared household items.", tone: "sage", symbol: "S" },
-  { title: "Grocery List", message: "The next grocery list will be easy to find.", tone: "blush", symbol: "G" },
-  { title: "Family Inbox", message: "Family requests will have one calm place.", tone: "blue", symbol: "F" },
-  { title: "Coming Up", message: "A few helpful reminders for the week.", tone: "taupe", symbol: "C" },
-];
+function HouseholdPreviewCard({ item }: { item: HouseholdPreview }) {
+  return (
+    <Card className={`${styles.previewCard} ${styles[`previewCard-${item.tone}`]}`}>
+      <span className={styles.previewIcon} aria-hidden="true">{item.symbol}</span>
+      <h2 className={styles.previewTitle}>{item.title}</h2>
+      <p>{item.message}</p>
+      <span className={styles.previewLabel}>
+        {item.count !== undefined ? `${item.count} ready · ` : ""}Preview →
+      </span>
+    </Card>
+  );
+}
 
 export default function Home() {
   return (
@@ -28,7 +39,7 @@ export default function Home() {
           <div className={styles.todayPage}>
             <header className={styles.welcome}>
               <p className={styles.todayLabel}>Today</p>
-              <p className={styles.calendarDate}>Tuesday, July 22, 2026</p>
+              <LocalDate className={styles.calendarDate} />
               <div className={styles.miniSprig} aria-hidden="true"><i /><i /><span /></div>
               <h1 className={styles.welcomeTitle}>
                 Welcome home
@@ -41,40 +52,95 @@ export default function Home() {
             <section className={styles.dashboardRegion} aria-label="Today’s dashboard">
               <div className={styles.primaryGrid}>
                 <TodayCard title="Today’s Schedule" eyebrow="Today’s schedule" className={styles.scheduleCard}>
-                  <ul className={styles.scheduleList}>
-                    {scheduleItems.map((item) => <li key={item.time}><span>{item.time}</span><p>{item.label}</p></li>)}
-                  </ul>
+                  <TodaySectionState
+                    state={todayMockData.schedule}
+                    emptyTitle="No events today"
+                    emptyMessage="The day is beautifully open. Nothing has been overlooked."
+                    loadingLabel="Checking today’s schedule"
+                    errorMessage="The schedule is temporarily unavailable."
+                  >
+                    {(items) => (
+                      <ul className={styles.scheduleList}>
+                        {items.map((item) => <li key={item.id}><span>{item.daypart}</span><p>{item.title}</p></li>)}
+                      </ul>
+                    )}
+                  </TodaySectionState>
                 </TodayCard>
-                <TodayCard title="72°" eyebrow="Right now" variant="sage" className={styles.weatherCard}>
-                  <div className={styles.weatherIcon} aria-hidden="true">☁</div>
-                  <p className={styles.weatherCondition}>Partly Cloudy</p>
-                  <small>Feels like 73°</small>
-                  <p className={styles.weatherMessage}>Beautiful day ahead.</p>
+                <TodayCard title="Weather" eyebrow="Right now" variant="sage" className={styles.weatherCard}>
+                  <TodaySectionState
+                    state={todayMockData.weather}
+                    emptyTitle="Weather is quiet"
+                    emptyMessage="There’s no weather summary to show yet."
+                    loadingLabel="Checking the weather"
+                    errorMessage="Weather is unavailable, but the rest of today is ready."
+                  >
+                    {(weather) => (
+                      <>
+                        <p className={styles.weatherTemperature}>{weather.temperature}°</p>
+                        <div className={styles.weatherIcon} aria-hidden="true">☁</div>
+                        <p className={styles.weatherCondition}>{weather.condition}</p>
+                        <small>Feels like {weather.feelsLike}°</small>
+                        <p className={styles.weatherMessage}>{weather.message}</p>
+                      </>
+                    )}
+                  </TodaySectionState>
                 </TodayCard>
-                <TodayCard title="Spaghetti & Meatballs" eyebrow="Dinner tonight" variant="blush" className={styles.dinnerCard}>
-                  <p className={styles.featureText}>With garlic bread<br />and green salad</p>
-                  <div className={styles.dinnerMark} aria-hidden="true">♨</div>
+                <TodayCard title="Dinner Tonight" eyebrow="Dinner tonight" variant="blush" className={styles.dinnerCard}>
+                  <TodaySectionState
+                    state={todayMockData.dinner}
+                    emptyTitle="Dinner is open"
+                    emptyMessage="There’s still plenty of time to choose something simple."
+                    loadingLabel="Checking tonight’s plan"
+                    errorMessage="Dinner details are temporarily unavailable."
+                  >
+                    {(dinner) => (
+                      <>
+                        <h3 className={styles.dinnerTitle}>{dinner.name}</h3>
+                        {dinner.details ? <p className={styles.featureText}>{dinner.details}</p> : null}
+                        <div className={styles.dinnerMark} aria-hidden="true">♨</div>
+                      </>
+                    )}
+                  </TodaySectionState>
                 </TodayCard>
               </div>
 
               <div className={styles.dailyLifeGrid}>
-                <TodayToDoCard />
+                <TodayToDoCard state={todayMockData.tasks} />
                 <section className={styles.kenzieSection} aria-labelledby="kenzie-heading">
                   <h2 id="kenzie-heading" className={styles.visuallyHidden}>Kenzie&apos;s daily note</h2>
-                  <KenzieNote title="A note from Kenzie" audience="family" message="Your day has a place to land. We’ll keep it simple and take it one step at a time." />
+                  <TodaySectionState
+                    state={todayMockData.kenzie}
+                    emptyTitle="A quiet moment"
+                    emptyMessage="Kenzie doesn’t have a note for today, and everything else is still here."
+                    loadingLabel="Kenzie’s note is on its way"
+                    errorMessage="Kenzie’s note is unavailable. Your household information still works normally."
+                  >
+                    {(note) => (
+                      <KenzieNote
+                        title={note.title}
+                        audience={note.audience}
+                        message={note.message}
+                        signature={note.signature}
+                      />
+                    )}
+                  </TodaySectionState>
                 </section>
               </div>
             </section>
 
             <section className={styles.supportingRegion} id="family-hub" aria-label="Supporting household information">
               <div className={styles.previewGrid}>
-                {previewCards.map((item) => (
-                  <Card key={item.title} className={`${styles.previewCard} ${styles[`previewCard-${item.tone}`]}`}>
-                    <span className={styles.previewIcon} aria-hidden="true">{item.symbol}</span>
-                    <h2 className={styles.previewTitle}>{item.title}</h2>
-                    <p>{item.message}</p>
-                    <span className={styles.previewLabel}>Preview →</span>
-                  </Card>
+                {householdPreviews.map((previewState, index) => (
+                  <TodaySectionState
+                    key={index}
+                    state={previewState}
+                    emptyTitle="Nothing waiting"
+                    emptyMessage="This area is clear for now."
+                    loadingLabel="Getting this preview ready"
+                    errorMessage="This preview is temporarily unavailable."
+                  >
+                    {(item) => <HouseholdPreviewCard item={item} />}
+                  </TodaySectionState>
                 ))}
               </div>
             </section>

@@ -15,6 +15,7 @@ import {
   Select,
   Textarea,
 } from "@/components/design-system";
+import TodayStatePreview from "@/components/today/TodayStatePreview";
 import styles from "./page.module.css";
 
 const colors = [
@@ -157,6 +158,14 @@ export default function DesignSystemPage() {
           graphic={<PlaceholderArtwork />}
           signature={<span>Optional signature area</span>}
         />
+      </section>
+
+      <section className={styles.section}>
+        <SectionHeader
+          title="Today section states"
+          description="Internal examples of the populated, empty, loading, and error contract used by Today’s Headquarters."
+        />
+        <TodayStatePreview />
       </section>
     </main>
   );

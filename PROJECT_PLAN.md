@@ -64,9 +64,15 @@ Milestones 1 through 3 are complete. The current application includes:
 - A typed reusable design-system component library
 - Illustration infrastructure and accessibility guidance without final artwork
 - A development-only design-system preview at `/design-system`
+- A centralized typed Today frontend model and mock-data boundary
+- A browser-local, hydration-safe Today date
+- Reusable populated, empty, loading, and error states for Today sections
+- An accessible, session-only interactive Today’s To-Do preview for the current family member
 - Successful TypeScript validation
 - Successful production build
 - A working development server at http://localhost:3000
+
+Milestone 4B is in review. Its current scope establishes the functional Today experience foundation without backend persistence, authentication, or future feature routes.
 
 ## Engineering Rules
 

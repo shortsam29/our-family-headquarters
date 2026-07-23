@@ -156,6 +156,9 @@ Shared components live in `components/design-system` and use typed, maintainable
 - Today’s Headquarters receives a distinct sage selected treatment to communicate that it is the familiar starting place for the household without making it visually loud.
 - Today summary cards use a reusable heading pattern with an optional eyebrow and concise detail area. Each card presents one idea and avoids embedding business logic.
 - Today’s To-Do List is a primary daily surface. On Today’s Headquarters it presents an encouraging checklist preview for chores, homework, personal tasks, and recurring routines while preserving the complete task experience for its owning screen.
+- Today section components use a consistent populated, empty, loading, and error contract. Empty states confirm calm or completion; errors explain temporary unavailability without suggesting the whole household is broken; loading states remain quiet and honor reduced-motion preferences.
+- Today’s To-Do completion controls use large targets, explicit completed or not-completed text, accessible pressed state, and progress language. Completion is never communicated by color alone.
+- Household-shared previews and signed-in-member content remain visually coherent but data-distinct. Personal tasks and guidance must never imply that one member’s responsibilities belong to the entire household.
 - Card surfaces may vary subtly in scale, radius, spacing, elevation, and muted palette treatment to communicate importance. They must remain cohesive and should not become identical dashboard widgets.
 
 Search, dialogs, calendars, lists, tables, and notification patterns remain reserved for the milestones that implement them.
@@ -197,6 +200,8 @@ The implemented foundation establishes the following baseline:
 - Error states use text and semantics in addition to color.
 - Informative illustrations require alternative text; decorative artwork is hidden from assistive technology.
 - Primary and supporting text use accessible, readable sizes and line heights.
+- Dynamic dates use semantic `time` markup and the user’s browser locale without exposing hydration inconsistencies.
+- Interactive task controls announce the task name and the action they will perform, expose current state programmatically, and provide keyboard-visible focus.
 
 ## Kenzie
 
@@ -221,3 +226,4 @@ _Placeholder: Define guidelines that ensure future features remain consistent wi
 | 0.1 | 2026-07-22 | Initial document structure created. |
 | 0.4 | 2026-07-23 | Recorded the approved Today’s Headquarters mockup composition, sidebar identity, and responsive daily-life layout. |
 | 0.5 | 2026-07-23 | Established the permanent four-region page blueprint and full-width supporting household row. |
+| 0.6 | 2026-07-23 | Added permanent Today state, personalization-boundary, local-date, and accessible task-interaction standards. |

@@ -1,0 +1,47 @@
+.state {
+  display: flex;
+  min-height: 118px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  text-align: center;
+  border: 1px dashed rgba(142, 155, 132, 0.35);
+  border-radius: var(--radius-medium);
+}
+
+.state strong {
+  color: var(--color-deep-olive);
+}
+
+.state p {
+  max-width: 32rem;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-supporting);
+  line-height: var(--line-height-body);
+}
+
+.loading {
+  background: linear-gradient(100deg, rgba(228, 233, 223, 0.55), rgba(255, 253, 252, 0.8), rgba(228, 233, 223, 0.55));
+  background-size: 220% 100%;
+  animation: state-shimmer 1.8s ease-in-out infinite;
+}
+
+.error {
+  background: var(--color-error-soft);
+  border-color: rgba(143, 88, 81, 0.32);
+}
+
+@keyframes state-shimmer {
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading {
+    animation: none;
+  }
+}
