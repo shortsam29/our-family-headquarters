@@ -4,14 +4,15 @@ import TodaySectionState from "@/components/today/TodaySectionState";
 import TodayToDoCard from "@/components/today/TodayToDoCard";
 import { setTaskCompletion } from "@/app/actions/tasks";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
-import { getCurrentMemberTasks, getScheduleData } from "@/lib/data/core";
+import { getCurrentMemberTasks, getKenzieGuidance, getScheduleData } from "@/lib/data/core";
+import { getDomainSignals } from "@/lib/data/domains";
 import { myDayData } from "@/lib/features/mock-data";
 
 export default async function MyDayPage() {
   const context = await requireCurrentHouseholdContext();
-  const [schedule, tasks] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context)]);
+  const [schedule, tasks, signals] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context)]);
   const reminders = context.source === "development-fixture" ? myDayData.reminders : { status: "empty" as const };
-  const kenzie = context.source === "development-fixture" ? myDayData.kenzie : { status: "empty" as const };
+  const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
 
   return (
     <FeaturePage>

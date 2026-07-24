@@ -1,19 +1,26 @@
 import Link from "next/link";
 import { Badge, Card, FamilyMemberBadge, KenzieNote } from "@/components/design-system";
+import { FamilyMemberManager } from "@/components/family/FamilyMemberManager";
 import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, SummaryCard } from "@/components/features/FeaturePage";
 import TodaySectionState from "@/components/today/TodaySectionState";
 import { familyHubUpdates, householdAssets } from "@/lib/features/mock-data";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
-import { getHouseholdMembers } from "@/lib/data/core";
+import { getHouseholdMembers, getManagedHouseholdMembers } from "@/lib/data/core";
+import { getHouseholdAssetSummaries } from "@/lib/data/household-assets";
 
-export default async function FamilyHubPage() {
+export default async function FamilyHubPage({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const context = await requireCurrentHouseholdContext();
-  const membersState = await getHouseholdMembers(context);
+  const feedback = await searchParams;
+  const [membersState, managedMembers, liveAssets] = await Promise.all([getHouseholdMembers(context), getManagedHouseholdMembers(context), getHouseholdAssetSummaries(context)]);
+  const canManageMembers = context.role === "household_manager" || context.role === "parent";
   return (
     <FeaturePage>
       <FeaturePageHeader eyebrow="Family communication" title="Family Hub" description="A warm, permission-aware home for household conversations, announcements, and the people who share this home." />
 
-      <FeatureSection title="Household members" description="Neutral development profiles demonstrate the shared-home model without using real family information.">
+      {feedback.status ? <p role="status">Family member information saved.</p> : null}
+      {feedback.error ? <p role="alert">That family member change could not be saved. Please review it and try again.</p> : null}
+
+      <FeatureSection title="Household members" description="The people who belong to this household and their shared-home roles.">
         <TodaySectionState state={membersState} emptyTitle="Household setup is ready" emptyMessage="No family-member profiles have been added yet." loadingLabel="Gathering household members" errorMessage="Household members are temporarily unavailable.">
           {(members) => <ResponsiveGrid columns={3}>
             {members.map((member) => (
@@ -27,6 +34,12 @@ export default async function FamilyHubPage() {
         </TodaySectionState>
       </FeatureSection>
 
+      {canManageMembers ? (
+        <FeatureSection title="Manage family members" description="Add household profiles or update names, roles, and active status. Account invitations remain separate.">
+          <FamilyMemberManager members={managedMembers} currentMemberId={context.familyMemberId} />
+        </FeatureSection>
+      ) : null}
+
       <FeatureSection title="Family updates" description="Announcements inform; conversations remain collaborative and keep their own history.">
         <TodaySectionState state={context.source === "development-fixture" ? { status: "populated", data: familyHubUpdates } : { status: "empty" }} emptyTitle="The family inbox is clear" emptyMessage="There are no announcements or conversations waiting." loadingLabel="Gathering family updates" errorMessage="Family updates are temporarily unavailable.">
           {(updates) => (
@@ -38,7 +51,7 @@ export default async function FamilyHubPage() {
       </FeatureSection>
 
       <FeatureSection title="People and household care" description="People remain distinct from protected household assets and records.">
-        <TodaySectionState state={context.source === "development-fixture" ? { status: "populated", data: householdAssets } : { status: "empty" }} emptyTitle="Household care is ready for setup" emptyMessage="No household assets have been added yet." loadingLabel="Gathering household care" errorMessage="Household care is temporarily unavailable.">
+        <TodaySectionState state={context.source === "development-fixture" ? { status: "populated", data: householdAssets } : liveAssets.length ? { status: "populated", data: liveAssets } : { status: "empty" }} emptyTitle="Household care is ready for setup" emptyMessage="No household assets have been added yet." loadingLabel="Gathering household care" errorMessage="Household care is temporarily unavailable.">
           {(assets) => <ResponsiveGrid columns={3}>
             {assets.map((asset) => (
               <Card key={asset.id}>

@@ -17,9 +17,15 @@ export async function signIn(formData: FormData) {
   if (!credentials.success) redirect("/sign-in?error=invalid");
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/sign-in?status=configuration");
-  const { error } = await supabase.auth.signInWithPassword(credentials.data);
-  if (error) redirect("/sign-in?error=credentials");
-  redirect("/");
+  const { data, error } = await supabase.auth.signInWithPassword(credentials.data);
+  if (error || !data.user) redirect("/sign-in?error=credentials");
+  const { data: membership } = await supabase
+    .from("household_memberships")
+    .select("id")
+    .eq("user_id", data.user.id)
+    .eq("status", "active")
+    .maybeSingle();
+  redirect(membership ? "/" : "/onboarding");
 }
 
 export async function signOut() {

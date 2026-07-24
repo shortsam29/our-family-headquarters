@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, KenzieNote } from "@/components/design-system";
 import LocalDate from "@/components/today/LocalDate";
 import TodayCard from "@/components/today/TodayCard";
@@ -15,9 +16,9 @@ function HouseholdPreviewCard({ item }: { item: HouseholdPreview }) {
       <span className={styles.previewIcon} aria-hidden="true">{item.symbol}</span>
       <h2 className={styles.previewTitle}>{item.title}</h2>
       <p>{item.message}</p>
-      <span className={styles.previewLabel}>
+      <Link className={styles.previewLabel} href={item.id === "upcoming" ? "/household" : "/shopping"}>
         {item.count !== undefined ? `${item.count} ready · ` : ""}Preview →
-      </span>
+      </Link>
     </Card>
   );
 }
@@ -124,6 +125,7 @@ export default async function Home() {
                       />
                     )}
                   </TodaySectionState>
+                  <Link href="/kenzie" className={styles.kenzieLink}>Visit Kenzie&apos;s Desk →</Link>
                 </section>
               </div>
             </section>

@@ -1,0 +1,42 @@
+.form {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 36rem;
+}
+
+.form label {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.form input,
+.form select {
+  min-height: 3rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.form button {
+  min-height: 3rem;
+  padding: 0 var(--space-5);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-action-primary);
+  color: var(--color-surface-elevated);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.form input:focus-visible,
+.form select:focus-visible,
+.form button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}

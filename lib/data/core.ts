@@ -1,10 +1,12 @@
 import { familyMembers, scheduleEvents } from "@/lib/features/mock-data";
 import { todayMockData } from "@/lib/today/mock-data";
+import { createKenzieNote } from "@/lib/kenzie/intelligence";
+import { getDomainSignals } from "@/lib/data/domains";
 import { toZonedDateIso } from "@/lib/today/date";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CurrentHouseholdContext } from "@/lib/auth/context";
 import type { FamilyMemberSummary, ScheduleEvent } from "@/types/features";
-import type { SectionState, TodayExperienceData, TodayTask } from "@/types/today";
+import type { KenzieNote, SectionState, TodayExperienceData, TodayTask } from "@/types/today";
 
 function localDateInTimeZone(timeZone: string) {
   return toZonedDateIso(new Date(), timeZone);
@@ -120,9 +122,76 @@ export async function getHouseholdMembers(context: CurrentHouseholdContext): Pro
   };
 }
 
+export type ManagedFamilyMember = {
+  id: string;
+  displayName: string;
+  role: CurrentHouseholdContext["role"];
+  status: "active" | "inactive" | "archived";
+};
+
+export async function getManagedHouseholdMembers(context: CurrentHouseholdContext): Promise<ManagedFamilyMember[]> {
+  if (context.source === "development-fixture") return [];
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("family_members")
+    .select("id,display_name,role,status")
+    .eq("household_id", context.householdId)
+    .order("created_at");
+  return (data ?? []).map((member) => ({
+    id: member.id,
+    displayName: member.display_name,
+    role: member.role as ManagedFamilyMember["role"],
+    status: member.status as ManagedFamilyMember["status"],
+  }));
+}
+
+export async function getKenzieGuidance(
+  context: CurrentHouseholdContext,
+  schedule: SectionState<ScheduleEvent[]>,
+  tasks: SectionState<TodayTask[]>,
+  signals: Awaited<ReturnType<typeof getDomainSignals>>,
+): Promise<SectionState<KenzieNote>> {
+  if (context.source === "development-fixture") return todayMockData.kenzie;
+  const today = localDateInTimeZone(context.timeZone);
+  let overdueCount = 0;
+  const supabase = await createSupabaseServerClient();
+  if (supabase) {
+    const { data } = await supabase
+      .from("task_assignments")
+      .select("tasks!inner(due_date,active),task_completions(completion_date)")
+      .eq("family_member_id", context.familyMemberId)
+      .eq("tasks.active", true);
+    overdueCount = (data ?? []).filter((assignment) => {
+      const task = assignment.tasks as unknown as { due_date: string | null };
+      return Boolean(task.due_date && task.due_date < today && !(assignment.task_completions ?? []).length);
+    }).length;
+  }
+  const visibleTasks = tasks.status === "populated" ? tasks.data : [];
+  const visibleSchedule = schedule.status === "populated" ? schedule.data : [];
+  return {
+    status: "populated",
+    data: createKenzieNote({
+      audience: context.role === "child" ? "child" : "family",
+      scheduledCount: visibleSchedule.filter((event) => event.date === "today").length,
+      upcomingCount: visibleSchedule.filter((event) => event.date !== "today").length,
+      assignedCount: visibleTasks.length,
+      completedCount: visibleTasks.filter((task) => task.completed).length,
+      overdueCount,
+      dinner: signals.meal,
+      shoppingCount: signals.shopping,
+      upcomingBillCount: signals.bills,
+      expiringDocumentCount: signals.documents,
+      petCareCount: signals.petCare,
+      vehicleCareCount: signals.vehicleCare,
+    }),
+  };
+}
+
 export async function getTodayExperienceData(context: CurrentHouseholdContext): Promise<TodayExperienceData> {
   if (context.source === "development-fixture") return todayMockData;
-  const [schedule, tasks] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context)]);
+  const [schedule, tasks, signals] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context)]);
+  const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
   const todaySchedule: TodayExperienceData["schedule"] =
     schedule.status === "populated"
       ? { status: "populated", data: schedule.data.slice(0, 3).map((event) => ({ id: event.id, title: event.title, daypart: "Morning" as const, scope: "household" as const })) }
@@ -139,12 +208,34 @@ export async function getTodayExperienceData(context: CurrentHouseholdContext): 
     schedule: todaySchedule,
     tasks,
     weather: { status: "empty" },
-    dinner: { status: "empty" },
+    dinner: signals.meal ? { status: "populated", data: { id: "tonight", name: signals.meal, scope: "household" } } : { status: "empty" },
     familyUpdates: { status: "empty" },
-    shopping: { status: "empty" },
-    grocery: { status: "empty" },
+    shopping: signals.shopping ? {
+      status: "populated",
+      data: {
+        id: "shopping", kind: "shopping", title: "Shopping Lists",
+        message: `${signals.shopping} ${signals.shopping === 1 ? "item is" : "items are"} still needed.`,
+        count: signals.shopping, scope: "household", tone: "sage", symbol: "◌",
+      },
+    } : { status: "empty" },
+    grocery: signals.shopping ? {
+      status: "populated",
+      data: {
+        id: "grocery", kind: "grocery", title: "Grocery List",
+        message: "The shared list is ready when the household shops.",
+        count: signals.shopping, scope: "household", tone: "blush", symbol: "◌",
+      },
+    } : { status: "empty" },
     inbox: { status: "empty" },
-    upcoming: { status: "empty" },
-    kenzie: { status: "empty" },
+    upcoming: signals.petCare + signals.vehicleCare + signals.documents + signals.bills ? {
+      status: "populated",
+      data: {
+        id: "upcoming", kind: "upcoming", title: "Coming Up",
+        message: "Household care and renewal reminders are gathered here.",
+        count: signals.petCare + signals.vehicleCare + signals.documents + signals.bills,
+        scope: "household", tone: "taupe", symbol: "○",
+      },
+    } : { status: "empty" },
+    kenzie,
   };
 }

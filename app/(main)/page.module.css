@@ -1,3 +1,5 @@
+.kenzieLink{display:inline-flex;margin-top:var(--space-3);color:var(--color-deep-olive);font-weight:700;text-decoration:none}
+.kenzieLink:hover{text-decoration:underline}
 .mainContent{min-width:0;flex:1;padding:20px clamp(22px,3vw,42px) 52px;background:radial-gradient(circle at 50% 0,#fffefc 0,transparent 34rem),var(--color-page-background)}
 .todayPage{width:min(100%,1120px);margin:0 auto}
 .welcome{display:flex;min-height:clamp(350px,42vh,400px);flex-direction:column;align-items:center;justify-content:flex-start;padding-top:0;text-align:center}
