@@ -17,6 +17,32 @@ export function toLocalDateIso(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+export function toZonedDateIso(
+  date: Date,
+  timeZone: string,
+  locale: string | string[] = "en-CA",
+) {
+  const parts = new Intl.DateTimeFormat(locale, {
+    timeZone,
+    calendar: "gregory",
+    numberingSystem: "latn",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type === "year" || part.type === "month" || part.type === "day")
+      .map((part) => [part.type, part.value]),
+  );
+
+  if (!values.year || !values.month || !values.day) {
+    throw new RangeError("The local calendar date could not be formatted.");
+  }
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 export function millisecondsUntilNextLocalDay(date: Date) {
   const nextDay = new Date(date);
   nextDay.setHours(24, 0, 0, 0);

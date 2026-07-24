@@ -1,17 +1,13 @@
 import { familyMembers, scheduleEvents } from "@/lib/features/mock-data";
 import { todayMockData } from "@/lib/today/mock-data";
+import { toZonedDateIso } from "@/lib/today/date";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CurrentHouseholdContext } from "@/lib/auth/context";
 import type { FamilyMemberSummary, ScheduleEvent } from "@/types/features";
 import type { SectionState, TodayExperienceData, TodayTask } from "@/types/today";
 
 function localDateInTimeZone(timeZone: string) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  return toZonedDateIso(new Date(), timeZone);
 }
 
 function scheduleDateLabel(value: string, timeZone: string) {
@@ -23,12 +19,7 @@ function scheduleDateLabel(value: string, timeZone: string) {
   const eventDate = new Date(dateOnly ? `${value}T12:00:00Z` : value);
   const eventLocalDate = dateOnly
     ? value
-    : new Intl.DateTimeFormat("en-CA", {
-        timeZone,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).format(eventDate);
+    : toZonedDateIso(eventDate, timeZone);
 
   if (eventLocalDate === today) return "today";
   if (eventLocalDate === tomorrow) return "tomorrow";

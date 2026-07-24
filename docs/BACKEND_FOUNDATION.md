@@ -68,6 +68,10 @@ Normal configured routes never silently fall back to fictional household data. D
 
 Domains without a persistent source return honest empty/setup states.
 
+Household-local database dates are generated with `formatToParts` and assembled
+as `YYYY-MM-DD`. This preserves the household time zone's calendar day without
+depending on locale-specific display order or converting the value through UTC.
+
 ## Task Persistence
 
 The task Server Action:
@@ -84,24 +88,38 @@ Schedule reads are household-scoped and include all-day or timed events, partici
 
 ## Development Seeding
 
-`supabase/seed.sql` creates a neutral fictional household, manager profile, and task. It requires:
+`supabase/seed.sql` creates two isolated fictional development households. The
+first contains a manager and child account, events, assigned tasks, and a
+completion record; the second contains a separate manager, event, and task for
+tenant-isolation verification. It requires:
 
-- an explicit `seed_user_id`;
-- `app.environment=development`.
+- three explicit development Auth user IDs;
+- the confirmation value `OUR_FAMILY_HEADQUARTERS_DEVELOPMENT`.
 
-The script refuses to run when the development environment marker is absent. It is never executed automatically in production.
+Stable fictional identifiers and upserts make the script repeatable without a
+database reset. The script refuses to run without the development confirmation
+and is never executed automatically in production.
+
+`supabase/tests/security-verification.sql` uses portable PostgreSQL assertions
+inside a rolled-back transaction. It verifies anonymous denial, household
+isolation, cross-household mutation denial, assignment visibility, completion
+permissions, and current-user resolution without requiring pgTAP.
 
 ## Local Setup
 
 1. Create a Supabase project or start the Supabase local stack.
 2. Apply `supabase/migrations/20260723210000_core_household.sql`.
 3. Enable email/password authentication.
-4. Create a development user through Supabase Auth.
-5. Run the seed script with that user ID and the development-only environment setting.
+4. Create the three fictional development users through Supabase Auth.
+5. Run the seed script with those user IDs and the explicit development confirmation.
 6. Add the public URL and publishable key to `.env.local`.
 7. Run `npm run dev`.
 
-Migration and RLS integration verification require a configured local Supabase/PostgreSQL instance. The repository includes structural security tests and a pgTAP verification script, but no production credentials.
+Migration and RLS integration verification require a configured local or linked
+development Supabase project. Browser automation remains deferred in
+environments where browser or media permission handling is unstable; the core
+backend checks can be completed with the Supabase CLI, direct HTTP verification,
+and unit tests. No production credentials belong in the repository.
 
 ## Deferred Work
 

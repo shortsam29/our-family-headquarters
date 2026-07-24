@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { toZonedDateIso } from "@/lib/today/date";
 
 const toggleSchema = z.object({ assignmentId: z.uuid(), completed: z.boolean() });
 export type TaskMutationResult = { ok: true } | { ok: false; message: string };
@@ -15,12 +16,7 @@ export async function setTaskCompletion(assignmentId: string, completed: boolean
   if (context.source === "development-fixture") return { ok: true };
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: false, message: "Tasks are temporarily unavailable." };
-  const completionDate = new Intl.DateTimeFormat("en-CA", {
-    timeZone: context.timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  const completionDate = toZonedDateIso(new Date(), context.timeZone);
   const { data: assignment } = await supabase
     .from("task_assignments")
     .select("id,family_member_id")
