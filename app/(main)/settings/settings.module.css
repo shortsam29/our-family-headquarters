@@ -1,3 +1,9 @@
+.setupSteps{display:grid;gap:var(--space-4);padding:0;counter-reset:setup;list-style:none}
+.setupSteps li{display:grid;grid-template-columns:auto 1fr;gap:var(--space-1) var(--space-4);padding:var(--space-5);border:1px solid var(--color-border);border-radius:var(--radius-large);background:var(--color-surface-elevated);counter-increment:setup}
+.setupSteps li::before{display:grid;width:2.25rem;height:2.25rem;grid-row:1/4;place-items:center;border-radius:50%;background:var(--color-light-sage);color:var(--color-deep-olive);content:counter(setup);font-weight:700}
+.setupSteps span{color:var(--color-text-secondary)}
+.setupSteps a{justify-self:start;color:var(--color-deep-olive);font-weight:700}
+
 .form {
   display: grid;
   gap: var(--space-5);

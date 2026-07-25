@@ -16,6 +16,11 @@ export default function MorePage() {
           </ResponsiveGrid>
         </FeatureSection>
       ))}
+      <FeatureSection title="Help & About">
+        <ResponsiveGrid columns={3}>
+          <DestinationCard href="/help" title="Help & About" description="Privacy, permissions, Family Vault storage, Kenzie, support, and version information." ownership="A calm guide to how this family home works." />
+        </ResponsiveGrid>
+      </FeatureSection>
     </FeaturePage>
   );
 }

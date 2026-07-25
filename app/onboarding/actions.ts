@@ -27,5 +27,5 @@ export async function createFirstHousehold(formData: FormData) {
     household_time_zone: parsed.data.timeZone,
   });
   if (error) redirect("/onboarding?error=save");
-  redirect("/");
+  redirect("/settings?setup=1");
 }
