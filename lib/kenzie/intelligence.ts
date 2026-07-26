@@ -14,10 +14,12 @@ export type KenzieContext = {
   expiringDocumentCount?: number;
   petCareCount?: number;
   vehicleCareCount?: number;
+  weatherMessage?: string;
 };
 
 export function createKenzieNote(context: KenzieContext): KenzieNote {
   const base = { id: "kenzie-daily-guidance", signature: "❤️ Kenzie" as const, audience: context.audience, scope: "member" as const };
+  if (context.weatherMessage) return { ...base, title: "A weather note for today", message: context.weatherMessage };
   if (context.petCareCount || context.vehicleCareCount) {
     const total = (context.petCareCount ?? 0) + (context.vehicleCareCount ?? 0);
     return { ...base, title: "A little care is coming up", message: `${total} household ${total === 1 ? "reminder is" : "reminders are"} approaching. There is time to take care of each one calmly.` };

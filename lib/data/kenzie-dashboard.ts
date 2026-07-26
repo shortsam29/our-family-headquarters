@@ -3,6 +3,9 @@ import { getCurrentMemberTasks, getScheduleData } from "@/lib/data/core";
 import { getDomainSignals } from "@/lib/data/domains";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createKenzieNote } from "@/lib/kenzie/intelligence";
+import { getHouseholdWeather } from "@/lib/weather/service";
+import { buildKenzieWeatherGuidance } from "@/lib/weather/kenzie";
+import { toZonedDateIso } from "@/lib/today/date";
 
 export type HouseholdMemory = {
   id: string;
@@ -43,8 +46,8 @@ export function buildPriorityObservations(input: {
   return observations.sort((a, b) => b.score - a.score).slice(0, 4);
 }
 
-export async function getKenzieDashboard(context: CurrentHouseholdContext) {
-  const [schedule, tasks, signals] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context)]);
+export async function getKenzieDashboard(context: CurrentHouseholdContext, includeWeather = false) {
+  const [schedule, tasks, signals, weather] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), includeWeather ? getHouseholdWeather(context) : Promise.resolve({ status: "unavailable" } as const)]);
   const supabase = await createSupabaseServerClient();
   let memories: HouseholdMemory[] = [];
   let preferences = defaultKenziePreferences;
@@ -76,14 +79,17 @@ export async function getKenzieDashboard(context: CurrentHouseholdContext) {
     scheduleCount: scheduleItems.length, taskCount: taskItems.length,
     completedCount: taskItems.filter((item) => item.completed).length, ...signals,
   });
+  const weatherMessage = weather.status === "populated" ? buildKenzieWeatherGuidance(weather.data, scheduleItems) : undefined;
+  if (weatherMessage) observations.unshift({ score: 92, title: "Weather and today's plans", message: weatherMessage });
+  const today = toZonedDateIso(new Date(), context.timeZone);
   const note = createKenzieNote({
     audience: context.role === "child" ? "child" : "family",
-    scheduledCount: scheduleItems.filter((item) => item.date === "today").length,
-    upcomingCount: scheduleItems.filter((item) => item.date !== "today").length,
+    scheduledCount: scheduleItems.filter((item) => item.date === today).length,
+    upcomingCount: scheduleItems.filter((item) => item.date > today).length,
     assignedCount: taskItems.length, completedCount: taskItems.filter((item) => item.completed).length,
     overdueCount: 0, dinner: signals.meal, shoppingCount: signals.shopping,
     upcomingBillCount: signals.bills, expiringDocumentCount: signals.documents,
-    petCareCount: signals.petCare, vehicleCareCount: signals.vehicleCare,
+    petCareCount: signals.petCare, vehicleCareCount: signals.vehicleCare, weatherMessage,
   });
   return { memories, preferences, accomplishments, approvedPlan, observations, note, schedule: scheduleItems, tasks: taskItems, signals };
 }

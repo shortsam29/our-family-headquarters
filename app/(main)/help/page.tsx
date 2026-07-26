@@ -22,6 +22,9 @@ export default function HelpPage() {
     <FeatureSection title="Where documents are stored">
       <Card><p>Family Vault files are stored in the household’s private Supabase Storage bucket. Signed links are short-lived, file metadata stays household-scoped, and access follows the document’s visibility setting.</p></Card>
     </FeatureSection>
+    <FeatureSection title="Weather data">
+      <Card><p>Household forecasts use city-level data from <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a>. Our Family Headquarters does not request precise device location or store a home address for weather.</p></Card>
+    </FeatureSection>
     <FeatureSection title="Support and version">
       <Card><h3 className="type-card-heading">Version 1.0</h3><p className="type-supporting">For help with a household account, contact the person who manages your household. For technical maintenance, use the project repository and the owner launch guide.</p></Card>
     </FeatureSection>

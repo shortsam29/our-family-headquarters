@@ -1,0 +1,3 @@
+import { FeaturePage, FeaturePageHeader, FeatureSection } from "@/components/features/FeaturePage";
+import { Card } from "@/components/design-system";
+export default function WeatherLoading() { return <FeaturePage><FeaturePageHeader eyebrow="Household weather" title="Weather" description="A calm look at the conditions around your family home."/><FeatureSection title="Checking the weather"><Card><p aria-live="polite">The family forecast is on its way.</p></Card></FeatureSection></FeaturePage>; }

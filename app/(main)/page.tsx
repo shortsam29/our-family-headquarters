@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Card, KenzieNote } from "@/components/design-system";
 import LocalDate from "@/components/today/LocalDate";
 import TodayCard from "@/components/today/TodayCard";
 import TodaySectionState from "@/components/today/TodaySectionState";
 import { FamilyCommunication } from "@/components/communication/FamilyCommunication";
 import { QuickAdd } from "@/components/quick-add/QuickAdd";
+import { HouseholdWeatherCard, WeatherLoadingCard } from "@/components/weather/WeatherCard";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
 import { getManagedHouseholdMembers, getScheduleData, getTodayExperienceData } from "@/lib/data/core";
 import { getFamilyCommunication } from "@/lib/data/communications";
@@ -72,25 +74,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                     )}
                   </TodaySectionState>
                 </TodayCard>
-                <TodayCard title="Weather" eyebrow="Right now" variant="sage" className={styles.weatherCard}>
-                  <TodaySectionState
-                    state={todayData.weather}
-                    emptyTitle="Weather is quiet"
-                    emptyMessage="Thereâ€™s no weather summary to show yet."
-                    loadingLabel="Checking the weather"
-                    errorMessage="Weather is unavailable, but the rest of today is ready."
-                  >
-                    {(weather) => (
-                      <>
-                        <p className={styles.weatherTemperature}>{weather.temperature} degrees</p>
-                        <div className={styles.weatherIcon} aria-hidden="true">â˜</div>
-                        <p className={styles.weatherCondition}>{weather.condition}</p>
-                        <small>Feels like {weather.feelsLike} degrees</small>
-                        <p className={styles.weatherMessage}>{weather.message}</p>
-                      </>
-                    )}
-                  </TodaySectionState>
-                </TodayCard>
+                <Suspense fallback={<WeatherLoadingCard />}><HouseholdWeatherCard context={context} /></Suspense>
                 <TodayCard title="Dinner Tonight" eyebrow="Dinner tonight" variant="blush" className={styles.dinnerCard}>
                   <TodaySectionState
                     state={todayData.dinner}
