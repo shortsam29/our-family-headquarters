@@ -3,6 +3,7 @@ import { KenzieNote } from "@/components/design-system";
 import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, SummaryCard } from "@/components/features/FeaturePage";
 import TodaySectionState from "@/components/today/TodaySectionState";
 import TodayToDoCard from "@/components/today/TodayToDoCard";
+import { PersonalTaskForm } from "@/components/tasks/PersonalTaskForm";
 import { BrainDump, PersonalWishList } from "@/components/personal/PersonalTools";
 import { PlannerCollection } from "@/components/personalized/PersonalizedPlanner";
 import { setTaskCompletion } from "@/app/actions/tasks";
@@ -12,6 +13,7 @@ import { getDomainSignals } from "@/lib/data/domains";
 import { getPrivatePersonalTools } from "@/lib/data/personal-tools";
 import { getPersonalizedPlannerItems, isJason } from "@/lib/data/personalized-planner";
 import { myDayData } from "@/lib/features/mock-data";
+import { toZonedDateIso } from "@/lib/today/date";
 
 export default async function MyHeadquartersPage({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const context = await requireCurrentHouseholdContext();
@@ -20,6 +22,7 @@ export default async function MyHeadquartersPage({ searchParams }: { searchParam
   const [schedule, tasks, signals, personalTools, jasonItems] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), getPrivatePersonalTools(context), jason ? getPersonalizedPlannerItems(context, ["training", "fight"]) : Promise.resolve([])]);
   const reminders = context.source === "development-fixture" ? myDayData.reminders : { status: "empty" as const };
   const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
+  const today = toZonedDateIso(new Date(), context.timeZone);
 
   return (
     <FeaturePage>
@@ -41,7 +44,8 @@ export default async function MyHeadquartersPage({ searchParams }: { searchParam
         </TodaySectionState>
       </FeatureSection>
 
-      <FeatureSection title="Your responsibilities" description="Completion is saved securely for the signed-in family member.">
+      <FeatureSection title="Your responsibilities" description="Add your own tasks here, then mark them complete when they are done.">
+        <PersonalTaskForm today={today} />
         <TodayToDoCard
           state={tasks}
           onToggle={context.source === "supabase" ? setTaskCompletion : undefined}

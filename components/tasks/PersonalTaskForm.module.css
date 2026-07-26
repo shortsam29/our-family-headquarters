@@ -1,0 +1,16 @@
+.addTask{margin-bottom:var(--space-5);padding:var(--space-4);background:linear-gradient(180deg,#fffaf4,#f4f0e6);border:1px solid rgba(109,130,91,.3);border-radius:var(--radius-medium);box-shadow:0 5px 14px rgba(92,76,58,.07)}
+.addTask>summary{display:inline-flex;min-height:46px;align-items:center;padding:0 var(--space-5);color:var(--color-soft-white);background:var(--color-deep-olive);border-radius:var(--radius-pill);font-weight:var(--font-weight-semibold);cursor:pointer;list-style:none}
+.addTask>summary::-webkit-details-marker{display:none}
+.addTask>summary:focus-visible,.form input:focus-visible,.form select:focus-visible,.form textarea:focus-visible,.form button:focus-visible{outline:3px solid var(--color-focus);outline-offset:3px}
+.form{display:grid;gap:var(--space-4);margin-top:var(--space-5);padding-top:var(--space-4);border-top:1px solid rgba(109,130,91,.18)}
+.intro{margin:0;color:var(--color-text-secondary)}
+.form label{display:grid;gap:var(--space-2);color:var(--color-charcoal);font-weight:var(--font-weight-semibold)}
+.form input,.form select,.form textarea{width:100%;min-height:46px;padding:10px 12px;color:var(--color-charcoal);background:var(--color-soft-white);border:1px solid rgba(109,130,91,.3);border-radius:var(--radius-small);font:inherit}
+.form textarea{min-height:92px;resize:vertical}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}
+.actions{display:flex;justify-content:flex-start}
+.actions button{min-height:46px;padding:0 var(--space-5);color:var(--color-soft-white);background:var(--color-deep-olive);border:0;border-radius:var(--radius-pill);font:inherit;font-weight:var(--font-weight-semibold);cursor:pointer}
+.actions button:disabled{cursor:wait;opacity:.65}
+.success{margin:0;color:var(--color-deep-olive);font-weight:var(--font-weight-semibold)}
+.error{margin:0;color:#8a3d35;font-weight:var(--font-weight-semibold)}
+@media(max-width:560px){.addTask{padding:var(--space-3)}.row{grid-template-columns:1fr}.addTask>summary,.actions button{width:100%;justify-content:center}}
