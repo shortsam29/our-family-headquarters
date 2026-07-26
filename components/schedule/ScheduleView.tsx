@@ -49,9 +49,9 @@ function EventCard({ event, members, canManage, onSaved }: { event: ScheduleEven
 
 const daypart = (event: ScheduleEvent) => { if (event.allDay) return "All day"; const hour = Number(event.startTime?.slice(0, 2) ?? "12"); return hour < 12 ? "Morning" : hour < 17 ? "Afternoon" : "Evening"; };
 
-export default function ScheduleView({ events, members, canManage, today }: { events: ScheduleEvent[]; members: ManagedFamilyMember[]; canManage: boolean; today: string }) {
+export default function ScheduleView({ events, members, canManage, today, initialDate }: { events: ScheduleEvent[]; members: ManagedFamilyMember[]; canManage: boolean; today: string; initialDate?: string }) {
   const [view, setView] = useState<ViewName>("month");
-  const [selected, setSelected] = useState(today);
+  const [selected, setSelected] = useState(initialDate ?? today);
   const [adding, setAdding] = useState(false);
   const [notice, setNotice] = useState("");
   const dates = useMemo(() => view === "month" ? monthCells(selected) : view === "week" ? Array.from({ length: 7 }, (_, index) => addDays(startOfWeek(selected), index)) : [selected], [view, selected]);

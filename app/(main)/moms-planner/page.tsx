@@ -1,11 +1,13 @@
-import {redirect} from "next/navigation";
-import {DomainRoom} from "@/components/domains/DomainRoom";
-import {FeaturePage,FeaturePageHeader,FeatureSection} from "@/components/features/FeaturePage";
-import {PlanTomorrow} from "@/components/kenzie/PlanTomorrow";
-import {TaskManager} from "@/components/tasks/TaskManager";
-import {requireCurrentHouseholdContext} from "@/lib/auth/context";
-import {getManagedHouseholdMembers} from "@/lib/data/core";
-import {getDomainRoomData} from "@/lib/data/domains";
-import {getManagedTasks} from "@/lib/data/tasks";
-import {toZonedDateIso} from "@/lib/today/date";
-export default async function MomsPlanner(){const context=await requireCurrentHouseholdContext();if(!context.displayName.trim().toLowerCase().startsWith("samantha"))redirect("/my-headquarters");const[tasks,members,meals]=await Promise.all([getManagedTasks(context),getManagedHouseholdMembers(context),getDomainRoomData(context,"meals")]);const today=toZonedDateIso(new Date(),context.timeZone);return <FeaturePage><FeaturePageHeader eyebrow="Private planning space" title="Mom's Planner" description="Weekly planning, meals, chores, and a calm look ahead with Kenzie."/><FeatureSection title="Weekly chores and homework"><TaskManager tasks={tasks} members={members} canManage today={today} currentMemberId={context.familyMemberId}/></FeatureSection><FeatureSection title="Weekly meal planning"><DomainRoom slug="meals" records={meals.records} canManage/></FeatureSection><FeatureSection title="Plan with Kenzie" description="Review a structured proposal. Nothing saves until you approve it."><PlanTomorrow/></FeatureSection></FeaturePage>}
+import { redirect } from "next/navigation";
+import { DomainRoom } from "@/components/domains/DomainRoom";
+import { FeaturePage, FeaturePageHeader, FeatureSection } from "@/components/features/FeaturePage";
+import { PlanTomorrow } from "@/components/kenzie/PlanTomorrow";
+import { ReadingTracker, PlannerCollection } from "@/components/personalized/PersonalizedPlanner";
+import { TaskManager } from "@/components/tasks/TaskManager";
+import { requireCurrentHouseholdContext } from "@/lib/auth/context";
+import { getManagedHouseholdMembers } from "@/lib/data/core";
+import { getDomainRoomData } from "@/lib/data/domains";
+import { getPersonalizedPlannerItems, isSamantha } from "@/lib/data/personalized-planner";
+import { getManagedTasks } from "@/lib/data/tasks";
+import { toZonedDateIso } from "@/lib/today/date";
+export default async function MomsPlanner({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) { const context=await requireCurrentHouseholdContext(); if(!isSamantha(context.displayName)) redirect("/my-headquarters"); const feedback=await searchParams; const[tasks,members,meals,personal]=await Promise.all([getManagedTasks(context),getManagedHouseholdMembers(context),getDomainRoomData(context,"meals"),getPersonalizedPlannerItems(context,["reading","diy"])]); const today=toZonedDateIso(new Date(),context.timeZone); return <FeaturePage><FeaturePageHeader eyebrow="Private planning space" title="Mom's Planner" description="Weekly planning, personal ideas, meals, chores, and a calm look ahead with Kenzie."/>{feedback.status?<p role="status">Your private planner was updated.</p>:null}{feedback.error?<p role="alert">That item could not be saved. Please check the details and try again.</p>:null}<FeatureSection title="Reading" description="Keep books you want to read and remember the ones you finished."><ReadingTracker items={personal.filter(item=>item.type==="reading")}/></FeatureSection><FeatureSection title="DIY Ideas" description="A private place to save future projects before they are forgotten."><PlannerCollection type="diy" items={personal.filter(item=>item.type==="diy")}/></FeatureSection><FeatureSection title="Weekly chores and homework"><TaskManager tasks={tasks} members={members} canManage today={today} currentMemberId={context.familyMemberId}/></FeatureSection><FeatureSection title="Weekly meal planning"><DomainRoom slug="meals" records={meals.records} canManage/></FeatureSection><FeatureSection title="Plan with Kenzie" description="Review a structured proposal. Nothing saves until you approve it."><PlanTomorrow/></FeatureSection></FeaturePage> }
