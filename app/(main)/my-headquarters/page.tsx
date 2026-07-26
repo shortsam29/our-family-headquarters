@@ -3,21 +3,23 @@ import { KenzieNote } from "@/components/design-system";
 import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, SummaryCard } from "@/components/features/FeaturePage";
 import TodaySectionState from "@/components/today/TodaySectionState";
 import TodayToDoCard from "@/components/today/TodayToDoCard";
+import { BrainDump, PersonalWishList } from "@/components/personal/PersonalTools";
 import { setTaskCompletion } from "@/app/actions/tasks";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
 import { getCurrentMemberTasks, getKenzieGuidance, getScheduleData } from "@/lib/data/core";
 import { getDomainSignals } from "@/lib/data/domains";
+import { getPrivatePersonalTools } from "@/lib/data/personal-tools";
 import { myDayData } from "@/lib/features/mock-data";
 
 export default async function MyHeadquartersPage() {
   const context = await requireCurrentHouseholdContext();
-  const [schedule, tasks, signals] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context)]);
+  const [schedule, tasks, signals, personalTools] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), getPrivatePersonalTools(context)]);
   const reminders = context.source === "development-fixture" ? myDayData.reminders : { status: "empty" as const };
   const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
 
   return (
     <FeaturePage>
-      <FeaturePageHeader eyebrow="Your personal day" title="My Headquarters" description="Your personal headquarters for today, upcoming responsibilities, and what matters to you—connected to the household without showing everyone else’s responsibilities." />
+      <FeaturePageHeader eyebrow="Your personal day" title="My Headquarters" description="Your personal safe place for today’s responsibilities, private notes, and ideas you want to remember." />
 
       <FeatureSection title="Your day at a glance">
         <ResponsiveGrid columns={3}>
@@ -44,6 +46,16 @@ export default async function MyHeadquartersPage() {
         <TodaySectionState state={reminders} emptyTitle="Nothing to remember" emptyMessage="Your reminder space is clear." loadingLabel="Checking reminders" errorMessage="Personal reminders are temporarily unavailable.">
           {(items) => <ResponsiveGrid columns={2}>{items.map((reminder) => <SummaryCard key={reminder.id} title={reminder.title} detail={reminder.when} variant="neutral" />)}</ResponsiveGrid>}
         </TodaySectionState>
+      </FeatureSection>
+
+      {personalTools.error ? <p role="alert">{personalTools.error}</p> : null}
+
+      <FeatureSection title="🧠 Brain Dump" description="A place to quickly save thoughts, reminders, ideas, or anything you don’t want to forget.">
+        <BrainDump notes={personalTools.brainNotes} />
+      </FeatureSection>
+
+      <FeatureSection title="⭐ Personal Wish List" description="Save things you’d like to buy someday so you don’t forget them.">
+        <PersonalWishList items={personalTools.wishItems} />
       </FeatureSection>
 
       <FeatureSection title="A little encouragement">
