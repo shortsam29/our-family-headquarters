@@ -9,6 +9,7 @@ export type KenzieContext = {
   upcomingCount: number;
   dinner?: string;
   shoppingCount?: number;
+  conversationCount?: number;
   upcomingBillCount?: number;
   expiringDocumentCount?: number;
   petCareCount?: number;
@@ -25,6 +26,7 @@ export function createKenzieNote(context: KenzieContext): KenzieNote {
     const total = (context.upcomingBillCount ?? 0) + (context.expiringDocumentCount ?? 0);
     return { ...base, title: "A quiet planning note", message: `${total} adult household ${total === 1 ? "item is" : "items are"} coming up this month. Nothing needs to be handled all at once.` };
   }
+  if (context.conversationCount && context.conversationCount > 0) return { ...base, title: "A family message is waiting", message: `${context.conversationCount} ${context.conversationCount === 1 ? "message may" : "messages may"} need a quick look. You can decide whether anything belongs on Shopping, Tasks, or the calendar.` };
   if (context.shoppingCount && context.shoppingCount > 0) return { ...base, title: "The list is gathering nicely", message: `${context.shoppingCount} ${context.shoppingCount === 1 ? "item is" : "items are"} waiting on the household lists${context.dinner ? `, and ${context.dinner} is planned for dinner` : ""}.` };
   if (context.dinner) return { ...base, title: "Dinner has a place", message: `${context.dinner} is planned for tonight, so one daily question is already answered.` };
   if (context.overdueCount > 0) return { ...base, title: "One gentle place to begin", message: `${context.overdueCount} ${context.overdueCount === 1 ? "item may" : "items may"} need another look. Start with one, and let the rest wait their turn.` };

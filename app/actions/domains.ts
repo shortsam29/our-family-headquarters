@@ -17,8 +17,8 @@ function canManage(role: string) {
   return role === "household_manager" || role === "parent";
 }
 
-function route(slug: DomainSlug, status: "saved" | "removed" | "error"): never {
-  redirect(`/${slug}?${status === "error" ? "error=save" : `status=${status}`}`);
+function route(slug: DomainSlug, status: "saved" | "removed" | "error", destination = `/${slug}`): never {
+  redirect(`${destination}?${status === "error" ? "error=save" : `status=${status}`}`);
 }
 
 function mondayIso(dateValue?: string) {
@@ -31,35 +31,36 @@ function mondayIso(dateValue?: string) {
 export async function createDomainRecord(slugValue: string, formData: FormData) {
   if (!isDomainSlug(slugValue)) return;
   const slug = slugValue;
+  const destination = slug === "shopping" && formData.get("listType") === "grocery" ? "/grocery" : `/${slug}`;
   const context = await requireCurrentHouseholdContext();
-  if (slug !== "shopping" && !canManage(context.role)) route(slug, "error");
+  if (slug !== "shopping" && !canManage(context.role)) route(slug, "error", destination);
   const parsed = baseSchema.safeParse({ title: formData.get("title"), notes: formData.get("notes") || undefined });
-  if (!parsed.success) route(slug, "error");
+  if (!parsed.success) route(slug, "error", destination);
   const supabase = await createSupabaseServerClient();
-  if (!supabase) route(slug, "error");
+  if (!supabase) route(slug, "error", destination);
   const common = { household_id: context.householdId };
   let error: { message: string } | null = null;
 
   if (slug === "meals") {
     const date = z.iso.date().safeParse(formData.get("date"));
     const mealType = z.enum(["breakfast", "lunch", "dinner", "snack"]).safeParse(formData.get("mealType"));
-    if (!date.success || !mealType.success) route(slug, "error");
+    if (!date.success || !mealType.success) route(slug, "error", destination);
     const { data: plan, error: planError } = await supabase.from("meal_plans").upsert({
       ...common, week_start: mondayIso(date.data), created_by_member_id: context.familyMemberId,
     }, { onConflict: "household_id,week_start" }).select("id").single();
-    if (planError || !plan) route(slug, "error");
+    if (planError || !plan) route(slug, "error", destination);
     ({ error } = await supabase.from("meal_plan_entries").upsert({
       ...common, meal_plan_id: plan.id, planned_date: date.data, meal_type: mealType.data,
       name: parsed.data.title, notes: parsed.data.notes, status: "planned",
     }, { onConflict: "meal_plan_id,planned_date,meal_type" }));
   } else if (slug === "shopping") {
     const listType = z.enum(["grocery", "household"]).safeParse(formData.get("listType"));
-    if (!listType.success) route(slug, "error");
+    if (!listType.success) route(slug, "error", destination);
     const listName = String(formData.get("listName") || "").trim() || (listType.data === "grocery" ? "Groceries" : "Household Shopping");
     const { data: list, error: listError } = await supabase.from("shopping_lists").upsert({
       ...common, name: listName, list_type: listType.data, created_by_member_id: context.familyMemberId,
     }, { onConflict: "household_id,name,list_type" }).select("id").single();
-    if (listError || !list) route(slug, "error");
+    if (listError || !list) route(slug, "error", destination);
     ({ error } = await supabase.from("shopping_list_items").insert({
       ...common, shopping_list_id: list.id, name: parsed.data.title, notes: parsed.data.notes,
       category: String(formData.get("category") || "").trim() || null,
@@ -69,7 +70,7 @@ export async function createDomainRecord(slugValue: string, formData: FormData) 
     }));
   } else if (slug === "pets") {
     const species = z.string().trim().min(1).max(80).safeParse(formData.get("species"));
-    if (!species.success) route(slug, "error");
+    if (!species.success) route(slug, "error", destination);
     ({ error } = await supabase.from("pets").insert({ ...common, name: parsed.data.title, species: species.data, breed: String(formData.get("breed") || "").trim() || null, notes: parsed.data.notes }));
   } else if (slug === "contacts") {
     ({ error } = await supabase.from("household_contacts").insert({
@@ -100,21 +101,22 @@ export async function createDomainRecord(slugValue: string, formData: FormData) 
       recurrence: String(formData.get("recurrence") || "").trim() || null, notes: parsed.data.notes,
     }));
   }
-  if (error) route(slug, "error");
+  if (error) route(slug, "error", destination);
   revalidatePath(`/${slug}`);
   revalidatePath("/");
-  route(slug, "saved");
+  route(slug, "saved", destination);
 }
 
 export async function updateDomainRecord(slugValue: string, recordId: string, formData: FormData) {
   if (!isDomainSlug(slugValue) || !idSchema.safeParse(recordId).success) return;
   const slug = slugValue;
+  const destination = slug === "shopping" && formData.get("listType") === "grocery" ? "/grocery" : `/${slug}`;
   const context = await requireCurrentHouseholdContext();
-  if (slug !== "shopping" && !canManage(context.role)) route(slug, "error");
+  if (slug !== "shopping" && !canManage(context.role)) route(slug, "error", destination);
   const parsed = baseSchema.safeParse({ title: formData.get("title"), notes: formData.get("notes") || undefined });
-  if (!parsed.success) route(slug, "error");
+  if (!parsed.success) route(slug, "error", destination);
   const supabase = await createSupabaseServerClient();
-  if (!supabase) route(slug, "error");
+  if (!supabase) route(slug, "error", destination);
   const table = {
     meals: "meal_plan_entries", shopping: "shopping_list_items", pets: "pets",
     contacts: "household_contacts", vehicles: "vehicles", documents: "vault_documents",
@@ -123,29 +125,29 @@ export async function updateDomainRecord(slugValue: string, recordId: string, fo
   const titleField = slug === "documents" || slug === "finance" ? "title" : "name";
   const { error } = await supabase.from(table).update({ [titleField]: parsed.data.title, notes: parsed.data.notes ?? null })
     .eq("id", recordId).eq("household_id", context.householdId);
-  if (error) route(slug, "error");
+  if (error) route(slug, "error", destination);
   revalidatePath(`/${slug}`);
   revalidatePath("/");
-  route(slug, "saved");
+  route(slug, "saved", destination);
 }
 
-export async function removeDomainRecord(slugValue: string, recordId: string) {
+export async function removeDomainRecord(slugValue: string, recordId: string, returnTo?: string) {
   if (!isDomainSlug(slugValue) || !idSchema.safeParse(recordId).success) return;
   const slug = slugValue;
   const context = await requireCurrentHouseholdContext();
-  if (!canManage(context.role)) route(slug, "error");
+  if (!canManage(context.role)) route(slug, "error", returnTo);
   const supabase = await createSupabaseServerClient();
-  if (!supabase) route(slug, "error");
+  if (!supabase) route(slug, "error", returnTo);
   const table = {
     meals: "meal_plan_entries", shopping: "shopping_list_items", pets: "pets",
     contacts: "household_contacts", vehicles: "vehicles", documents: "vault_documents",
     finance: "finance_obligations",
   }[slug];
   const { error } = await supabase.from(table).delete().eq("id", recordId).eq("household_id", context.householdId);
-  if (error) route(slug, "error");
+  if (error) route(slug, "error", returnTo);
   revalidatePath(`/${slug}`);
   revalidatePath("/");
-  route(slug, "removed");
+  route(slug, "removed", returnTo);
 }
 
 export async function toggleFinanceStatus(recordId: string, paid: boolean) {
@@ -160,17 +162,25 @@ export async function toggleFinanceStatus(recordId: string, paid: boolean) {
   revalidatePath("/");
 }
 
-export async function clearCompletedShoppingItems() {
+export async function clearCompletedShoppingItems(returnTo = "/shopping") {
   const context = await requireCurrentHouseholdContext();
   const supabase = await createSupabaseServerClient();
   if (!supabase) route("shopping", "error");
-  const { error } = await supabase.from("shopping_list_items").delete().eq("household_id", context.householdId).eq("status", "purchased");
-  if (error) route("shopping", "error");
+  const listType = returnTo === "/grocery" ? "grocery" : "household";
+  const { data: lists, error: listError } = await supabase.from("shopping_lists").select("id").eq("household_id", context.householdId).eq("list_type", listType);
+  if (listError) route("shopping", "error", returnTo);
+  const listIds = (lists ?? []).map((list) => list.id);
+  if (listIds.length) {
+    const { error } = await supabase.from("shopping_list_items").delete().eq("household_id", context.householdId).eq("status", "purchased").in("shopping_list_id", listIds);
+    if (error) route("shopping", "error", returnTo);
+  }
   revalidatePath("/shopping");
+  revalidatePath("/grocery");
   revalidatePath("/");
+  redirect(returnTo === "/grocery" ? "/grocery" : "/shopping");
 }
 
-export async function toggleShoppingItem(recordId: string, completed: boolean) {
+export async function toggleShoppingItem(recordId: string, completed: boolean, returnTo = "/shopping") {
   if (!idSchema.safeParse(recordId).success) return;
   const context = await requireCurrentHouseholdContext();
   const supabase = await createSupabaseServerClient();
@@ -182,5 +192,7 @@ export async function toggleShoppingItem(recordId: string, completed: boolean) {
   }).eq("id", recordId).eq("household_id", context.householdId);
   if (error) route("shopping", "error");
   revalidatePath("/shopping");
+  revalidatePath("/grocery");
   revalidatePath("/");
+  redirect(returnTo === "/grocery" ? "/grocery" : "/shopping");
 }

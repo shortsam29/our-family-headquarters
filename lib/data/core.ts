@@ -143,6 +143,7 @@ export async function getKenzieGuidance(
   if (context.source === "development-fixture") return todayMockData.kenzie;
   const today = localDateInTimeZone(context.timeZone);
   let overdueCount = 0;
+  let conversationCount = 0;
   const supabase = await createSupabaseServerClient();
   if (supabase) {
     const { data } = await supabase
@@ -154,6 +155,8 @@ export async function getKenzieGuidance(
       const task = assignment.tasks as unknown as { due_date: string | null };
       return Boolean(task.due_date && task.due_date < today && !(assignment.task_completions ?? []).length);
     }).length;
+    const conversationResult = await supabase.from("family_conversations").select("id", { count: "exact", head: true }).eq("household_id", context.householdId).is("handled_at", null);
+    conversationCount = conversationResult.count ?? 0;
   }
   const visibleTasks = tasks.status === "populated" ? tasks.data : [];
   const visibleSchedule = schedule.status === "populated" ? schedule.data : [];
@@ -167,7 +170,8 @@ export async function getKenzieGuidance(
       completedCount: visibleTasks.filter((task) => task.completed).length,
       overdueCount,
       dinner: signals.meal,
-      shoppingCount: signals.shopping,
+      shoppingCount: signals.shopping + signals.grocery,
+      conversationCount,
       upcomingBillCount: signals.bills,
       expiringDocumentCount: signals.documents,
       petCareCount: signals.petCare,
@@ -206,12 +210,12 @@ export async function getTodayExperienceData(context: CurrentHouseholdContext): 
         count: signals.shopping, scope: "household", tone: "sage", symbol: "◌",
       },
     } : { status: "empty" },
-    grocery: signals.shopping ? {
+    grocery: signals.grocery ? {
       status: "populated",
       data: {
         id: "grocery", kind: "grocery", title: "Grocery List",
         message: "The shared list is ready when the household shops.",
-        count: signals.shopping, scope: "household", tone: "blush", symbol: "◌",
+        count: signals.grocery, scope: "household", tone: "blush", symbol: "◌",
       },
     } : { status: "empty" },
     inbox: { status: "empty" },

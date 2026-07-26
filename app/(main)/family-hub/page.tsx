@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Badge, Card, FamilyMemberBadge, KenzieNote } from "@/components/design-system";
 import { FamilyMemberManager } from "@/components/family/FamilyMemberManager";
-import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, SummaryCard } from "@/components/features/FeaturePage";
+import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid } from "@/components/features/FeaturePage";
 import TodaySectionState from "@/components/today/TodaySectionState";
-import { familyHubUpdates, householdAssets } from "@/lib/features/mock-data";
+import { householdAssets } from "@/lib/features/mock-data";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
 import { getHouseholdInvitations, getHouseholdMembers, getManagedHouseholdMembers } from "@/lib/data/core";
 import { getHouseholdAssetSummaries } from "@/lib/data/household-assets";
@@ -40,14 +40,8 @@ export default async function FamilyHubPage({ searchParams }: { searchParams: Pr
         </FeatureSection>
       ) : null}
 
-      <FeatureSection title="Family updates" description="Announcements inform; conversations remain collaborative and keep their own history.">
-        <TodaySectionState state={context.source === "development-fixture" ? { status: "populated", data: familyHubUpdates } : { status: "empty" }} emptyTitle="The family inbox is clear" emptyMessage="There are no announcements or conversations waiting." loadingLabel="Gathering family updates" errorMessage="Family updates are temporarily unavailable.">
-          {(updates) => (
-            <ResponsiveGrid columns={2}>
-              {updates.map((update) => <SummaryCard key={update.id} title={update.title} detail={update.message} meta={`${update.type} · ${update.audience}`} variant={update.type === "announcement" ? "blush" : "sage"} />)}
-            </ResponsiveGrid>
-          )}
-        </TodaySectionState>
+      <FeatureSection title="Family conversations and announcements" description="Quick messages and important notices now live at the heart of the home.">
+        <Card><p><Link href="/#family-conversations">Open family communication on Family Headquarters →</Link></p></Card>
       </FeatureSection>
 
       <FeatureSection title="People and household care" description="People remain distinct from protected household assets and records.">

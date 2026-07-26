@@ -5,8 +5,12 @@ import TodayCard from "@/components/today/TodayCard";
 import TodaySectionState from "@/components/today/TodaySectionState";
 import TodayToDoCard from "@/components/today/TodayToDoCard";
 import { setTaskCompletion } from "@/app/actions/tasks";
+import { FamilyCommunication } from "@/components/communication/FamilyCommunication";
+import { QuickAdd } from "@/components/quick-add/QuickAdd";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
-import { getTodayExperienceData } from "@/lib/data/core";
+import { getManagedHouseholdMembers, getScheduleData, getTodayExperienceData } from "@/lib/data/core";
+import { getFamilyCommunication } from "@/lib/data/communications";
+import { toZonedDateIso } from "@/lib/today/date";
 import type { HouseholdPreview, SectionState } from "@/types/today";
 import styles from "./page.module.css";
 
@@ -16,16 +20,20 @@ function HouseholdPreviewCard({ item }: { item: HouseholdPreview }) {
       <span className={styles.previewIcon} aria-hidden="true">{item.symbol}</span>
       <h2 className={styles.previewTitle}>{item.title}</h2>
       <p>{item.message}</p>
-      <Link className={styles.previewLabel} href={item.id === "upcoming" ? "/household" : "/shopping"}>
+      <Link className={styles.previewLabel} href={item.id === "upcoming" ? "/household" : item.id === "grocery" ? "/grocery" : "/shopping"}>
         {item.count !== undefined ? `${item.count} ready · ` : ""}Preview →
       </Link>
     </Card>
   );
 }
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const context = await requireCurrentHouseholdContext();
-  const todayData = await getTodayExperienceData(context);
+  const feedback = await searchParams;
+  const [todayData, scheduleState, members, communication] = await Promise.all([getTodayExperienceData(context), getScheduleData(context), getManagedHouseholdMembers(context), getFamilyCommunication(context)]);
+  const todayIso = toZonedDateIso(new Date(), context.timeZone);
+  const upcomingEvents = scheduleState.status === "populated" ? scheduleState.data.filter((event) => event.date > todayIso).slice(0, 5) : [];
+  const canManage = ["household_manager", "parent"].includes(context.role);
   const householdPreviews: SectionState<HouseholdPreview>[] = [
     todayData.shopping,
     todayData.grocery,
@@ -46,6 +54,10 @@ export default async function Home() {
               <p className={styles.welcomeMessage}>Everything your family needs for today will come together here.</p>
               <div className={styles.botanicalDivider} aria-hidden="true"><span>♥</span></div>
             </header>
+
+            {feedback.status ? <p role="status">Your family headquarters was updated.</p> : null}
+            {feedback.error ? <p role="alert">That item could not be saved. Please review it and try again.</p> : null}
+            <div className={styles.quickAddSpacer}><QuickAdd members={members} today={todayIso} canManage={canManage} /></div>
 
             <section className={styles.dashboardRegion} aria-label="Today’s dashboard">
               <div className={styles.primaryGrid}>
@@ -128,6 +140,15 @@ export default async function Home() {
                   <Link href="/kenzie" className={styles.kenzieLink}>Visit Kenzie&apos;s Desk →</Link>
                 </section>
               </div>
+            </section>
+
+            <section className={styles.communicationRegion} id="family-conversations" aria-label="Family communication">
+              <FamilyCommunication conversations={communication.conversations} announcements={communication.announcements} canAnnounce={canManage} />
+            </section>
+
+            <section className={styles.upcomingRegion} aria-labelledby="upcoming-events-title">
+              <div className={styles.regionHeading}><h2 id="upcoming-events-title">Upcoming Events</h2><Link href="/schedule">Open calendar →</Link></div>
+              {upcomingEvents.length ? <div className={styles.upcomingList}>{upcomingEvents.map((event) => <Card key={event.id}><time dateTime={event.date}>{event.date}</time><h3>{event.title}</h3><p>{event.allDay ? "All day" : event.startTime}</p></Card>)}</div> : <div className={styles.actionableEmpty}><p>No upcoming events.</p><Link href="/schedule">Add Event</Link></div>}
             </section>
 
             <section className={styles.supportingRegion} id="family-hub" aria-label="Supporting household information">

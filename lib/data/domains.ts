@@ -48,6 +48,7 @@ function mapRow(slug: DomainSlug, row: Row): DomainRecord {
 export async function getDomainRoomData(
   context: CurrentHouseholdContext,
   slug: DomainSlug,
+  shoppingType?: "grocery" | "household",
 ): Promise<DomainRoomData> {
   if (context.source === "development-fixture") return { records: [] };
   const supabase = await createSupabaseServerClient();
@@ -67,20 +68,22 @@ export async function getDomainRoomData(
               ? supabase.from("vault_documents").select("id,title,category,expiration_date,visibility,notes").is("archived_at", null)
               : supabase.from("finance_obligations").select("id,title,kind,amount,due_date,status,notes").neq("status", "archived");
 
-  const { data, error } = await query.eq("household_id", context.householdId).order("created_at", { ascending: false });
+  const scopedQuery = slug === "shopping" && shoppingType ? query.eq("shopping_lists.list_type", shoppingType) : query;
+  const { data, error } = await scopedQuery.eq("household_id", context.householdId).order("created_at", { ascending: false });
   if (error) return { records: [], error: "This room could not be loaded safely." };
   return { records: (data ?? []).map((row) => mapRow(slug, row as Row)) };
 }
 
 export async function getDomainSignals(context: CurrentHouseholdContext) {
-  if (context.source !== "supabase") return { meal: undefined, shopping: 0, bills: 0, documents: 0, petCare: 0, vehicleCare: 0 };
+  if (context.source !== "supabase") return { meal: undefined, shopping: 0, grocery: 0, bills: 0, documents: 0, petCare: 0, vehicleCare: 0 };
   const supabase = await createSupabaseServerClient();
-  if (!supabase) return { meal: undefined, shopping: 0, bills: 0, documents: 0, petCare: 0, vehicleCare: 0 };
+  if (!supabase) return { meal: undefined, shopping: 0, grocery: 0, bills: 0, documents: 0, petCare: 0, vehicleCare: 0 };
   const today = new Date().toISOString().slice(0, 10);
   const soon = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-  const [meal, shopping, bills, documents, petCare, vehicleCare] = await Promise.all([
+  const [meal, shopping, grocery, bills, documents, petCare, vehicleCare] = await Promise.all([
     supabase.from("meal_plan_entries").select("name").eq("household_id", context.householdId).eq("planned_date", today).eq("meal_type", "dinner").maybeSingle(),
-    supabase.from("shopping_list_items").select("id", { count: "exact", head: true }).eq("household_id", context.householdId).eq("status", "needed"),
+    supabase.from("shopping_list_items").select("id,shopping_lists!inner(list_type)", { count: "exact", head: true }).eq("household_id", context.householdId).eq("status", "needed").eq("shopping_lists.list_type", "household"),
+    supabase.from("shopping_list_items").select("id,shopping_lists!inner(list_type)", { count: "exact", head: true }).eq("household_id", context.householdId).eq("status", "needed").eq("shopping_lists.list_type", "grocery"),
     supabase.from("finance_obligations").select("id", { count: "exact", head: true }).eq("household_id", context.householdId).eq("status", "upcoming").lte("due_date", soon),
     supabase.from("vault_documents").select("id", { count: "exact", head: true }).eq("household_id", context.householdId).is("archived_at", null).lte("expiration_date", soon),
     supabase.from("pet_care_reminders").select("id", { count: "exact", head: true }).eq("household_id", context.householdId).eq("status", "active").lte("due_date", soon),
@@ -90,6 +93,7 @@ export async function getDomainSignals(context: CurrentHouseholdContext) {
   return {
     meal: meal.data?.name,
     shopping: shopping.count ?? 0,
+    grocery: grocery.count ?? 0,
     bills: adult ? bills.count ?? 0 : 0,
     documents: adult ? documents.count ?? 0 : 0,
     petCare: petCare.count ?? 0,

@@ -21,10 +21,10 @@ function EventCard({ event, members, canManage }: { event: ScheduleEvent; member
 }
 function EventForm({ event, members, selectedDate }: { event?:ScheduleEvent; members:ManagedFamilyMember[]; selectedDate?:string }) {
   return <form action={saveScheduleEvent.bind(null,event?.id ?? null)} className={styles.form}>
-    <label>Title<input name="title" defaultValue={event?.title} required maxLength={160}/></label>
+    <input type="hidden" name="returnTo" value="/schedule"/><label>Title<input name="title" defaultValue={event?.title} required maxLength={160}/></label>
     <label>Date<input name="date" type="date" defaultValue={event?.date ?? selectedDate} required/></label>
     <label className={styles.check}><input name="allDay" type="checkbox" defaultChecked={event?.allDay}/> All day</label>
-    <label>Start time<input name="startTime" type="time" defaultValue={event?.startTime}/></label><label>End time<input name="endTime" type="time" defaultValue={event?.endTime}/></label>
+    <label>Start time<input name="startTime" type="time" defaultValue={event?.startTime}/></label><label>End time (optional; defaults to one hour)<input name="endTime" type="time" defaultValue={event?.endTime}/></label>
     <label>Category<select name="category" defaultValue={event?.category ?? "family"}><option value="household">Household</option><option value="family">Family</option><option value="school">School</option><option value="work">Work</option><option value="appointment">Appointment</option><option value="celebration">Celebration</option></select></label>
     <label>Location<input name="location" defaultValue={event?.location} maxLength={240}/></label><label>Repeat<select name="recurrence" defaultValue=""><option value="">Does not repeat</option><option>daily</option><option>weekly</option><option>monthly</option></select></label><label>Reminder<select name="reminderMinutes" defaultValue=""><option value="">No reminder</option><option value="15">15 minutes before</option><option value="60">1 hour before</option><option value="1440">1 day before</option></select></label>
     <fieldset><legend>Participants</legend>{members.filter(m=>m.status==="active").map(m=><label className={styles.check} key={m.id}><input type="checkbox" name="participantIds" value={m.id} defaultChecked={event?.participantIds.includes(m.id)}/>{m.displayName}</label>)}</fieldset>
