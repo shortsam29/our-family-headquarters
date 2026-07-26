@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <body style="margin:0;background:#f7f2e8;color:#34372f;font-family:Arial,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:32px 16px;background:#f7f2e8;">
+      <tr><td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;padding:40px;border:1px solid #d8d2c4;border-radius:20px;background:#fffdf8;">
+          <tr><td>
+            <p style="margin:0 0 12px;color:#5f704d;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Our Family Headquarters</p>
+            <h1 style="margin:0 0 18px;font-size:30px;line-height:1.2;">Create a new password</h1>
+            <p style="margin:0 0 24px;line-height:1.6;">Someone requested a secure password reset for your family account. Use the button below to choose a new password.</p>
+            <p style="margin:0 0 28px;"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=recovery&amp;next=/reset-password" style="display:inline-block;padding:14px 24px;border-radius:999px;background:#5f704d;color:#ffffff;font-weight:700;text-decoration:none;">Reset My Password</a></p>
+            <p style="margin:0 0 10px;line-height:1.6;">This secure link expires in one hour. If you did not request a password reset, you can safely ignore this email and your password will stay unchanged.</p>
+            <p style="margin:24px 0 0;color:#6f716b;font-size:13px;line-height:1.5;">For your security, never share this email or its reset link with anyone.</p>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>

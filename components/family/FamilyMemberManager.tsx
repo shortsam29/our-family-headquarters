@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Card } from "@/components/design-system";
 import { addFamilyMember, disableJoinCode, generateJoinCode, removeFamilyMember, updateFamilyMember, type InvitationActionState } from "@/app/actions/family";
+import { sendMemberPasswordReset, type MemberPasswordResetState } from "@/app/auth/actions";
 import type { HouseholdInvitationSummary } from "@/lib/data/core";
 import styles from "./FamilyMemberManager.module.css";
 
@@ -25,7 +26,18 @@ function InvitationControl({ member, invitation }: { member: ManagedMember; invi
   </div>;
 }
 
-export function FamilyMemberManager({ members, currentMemberId, invitations }: { members: ManagedMember[]; currentMemberId: string; invitations: HouseholdInvitationSummary[] }) {
+
+function PasswordAssistance({ member, email }: { member: ManagedMember; email?: string }) {
+  const [state, action, pending] = useActionState(sendMemberPasswordReset, {} as MemberPasswordResetState);
+  if (!member.linkedAccount || !email) return null;
+  return <div className={styles.passwordHelp}>
+    <p><strong>Account email</strong><br />{email}</p>
+    <form action={action}><input type="hidden" name="memberId" value={member.id} /><button type="submit" disabled={pending}>{pending ? "Sending..." : "Send Password Reset Email"}</button></form>
+    {state.memberId === member.id && state.sent ? <p role="status">If an account exists, a password reset email has been sent.</p> : null}
+    {state.memberId === member.id && state.error ? <p role="alert">{state.error}</p> : null}
+  </div>;
+}
+export function FamilyMemberManager({ members, currentMemberId, invitations, accountEmails }: { members: ManagedMember[]; currentMemberId: string; invitations: HouseholdInvitationSummary[]; accountEmails: Record<string, string> }) {
   return <div className={styles.manager}>
     <Card><h3 className="type-card-heading">Add a family member</h3><p className="type-supporting">Create their family profile first, then make a private join code when they need their own account.</p><form action={addFamilyMember} className={styles.form}>
       <label>Display name<input name="displayName" required maxLength={100} /></label>
@@ -39,6 +51,7 @@ export function FamilyMemberManager({ members, currentMemberId, invitations }: {
       <label>Status<select name="status" defaultValue={member.status} disabled={member.id === currentMemberId}><option value="active">active</option><option value="inactive">inactive</option><option value="archived">archived</option></select>{member.id === currentMemberId ? <input type="hidden" name="status" value="active" /> : null}</label>
       <button type="submit">Save member</button>
     </form>
+    <PasswordAssistance member={member} email={accountEmails[member.id]} />
     {member.role !== "household_manager" ? <InvitationControl member={member} invitation={invitations.find((item) => item.familyMemberId === member.id)} /> : null}
     {member.id !== currentMemberId && member.role !== "household_manager" ? <form action={removeFamilyMember} className={styles.removeForm} onSubmit={(event) => { if (!window.confirm(`Remove ${member.displayName} from this household? Their historical records will be preserved.`)) event.preventDefault(); }}><input type="hidden" name="memberId" value={member.id} /><button type="submit">Remove from household</button></form> : null}
     </Card>)}

@@ -31,3 +31,5 @@
 .newHousehold a{display:inline-flex;min-height:48px;align-items:center;padding:0 var(--space-6);border:1px solid var(--color-deep-olive);border-radius:var(--radius-pill);color:var(--color-deep-olive);font-weight:700;text-decoration:none}
 .newHousehold a:hover{background:var(--color-light-sage)}
 .newHousehold a:focus-visible{outline:3px solid var(--color-focus);outline-offset:3px}
+
+.assistance{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--space-3);margin-top:var(--space-2)}.assistance a{min-height:44px;display:inline-flex;align-items:center;color:var(--color-deep-olive);font-weight:700}.assistance a:focus-visible{outline:3px solid var(--color-focus);outline-offset:3px}

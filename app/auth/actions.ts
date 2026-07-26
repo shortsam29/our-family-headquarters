@@ -1,9 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { displayName, invitedRegistrationSchema, invitationCodeSchema, registrationErrorCode, registrationSchema } from "@/lib/auth/registration";
+import { passwordRecoveryRedirectUrl, recoveryEmailSchema } from "@/lib/auth/recovery";
+import { requireCurrentHouseholdContext } from "@/lib/auth/context";
+import { getBackendConfiguration } from "@/lib/environment";
 
 const credentialsSchema = z.object({
   email: z.email(),
@@ -93,4 +97,43 @@ export async function signOut() {
   const supabase = await createSupabaseServerClient();
   if (supabase) await supabase.auth.signOut();
   redirect("/sign-in");
+}
+export type PasswordRecoveryState = { email?: string; error?: string; sent?: boolean };
+export type MemberPasswordResetState = { memberId?: string; error?: string; sent?: boolean };
+
+function createPasswordRecoveryClient() {
+  const configuration = getBackendConfiguration();
+  if (!configuration.configured) return null;
+  return createClient(configuration.url, configuration.publishableKey, { auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+}
+export async function requestPasswordReset(_: PasswordRecoveryState, formData: FormData): Promise<PasswordRecoveryState> {
+  const rawEmail = String(formData.get("email") ?? "").trim();
+  const email = recoveryEmailSchema.safeParse(rawEmail);
+  if (!email.success) return { email: rawEmail, error: "Enter a valid email address." };
+  const recoveryClient = createPasswordRecoveryClient();
+  if (!recoveryClient) return { email: rawEmail, error: "Account assistance is temporarily unavailable. Please try again soon." };
+  const { error } = await recoveryClient.auth.resetPasswordForEmail(email.data, { redirectTo: passwordRecoveryRedirectUrl() });
+  if (error) console.error("Password recovery request failed", error.code);
+  return { sent: true };
+}
+
+export async function sendMemberPasswordReset(_: MemberPasswordResetState, formData: FormData): Promise<MemberPasswordResetState> {
+  const memberId = z.uuid().safeParse(formData.get("memberId"));
+  if (!memberId.success) return { error: "Choose a valid family member." };
+  const context = await requireCurrentHouseholdContext();
+  if (!(["household_manager", "parent"] as string[]).includes(context.role)) return { memberId: memberId.data, error: "Only a household manager or parent can send account assistance." };
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return { memberId: memberId.data, error: "Account assistance is temporarily unavailable." };
+  const { data, error: lookupError } = await supabase.rpc("household_member_account_emails");
+  if (lookupError) {
+    console.error("Member account lookup failed", lookupError.code);
+    return { memberId: memberId.data, error: "Account assistance is temporarily unavailable." };
+  }
+  const account = (data ?? []).find((entry: { member_id: string; email: string }) => entry.member_id === memberId.data);
+  if (account) {
+    const recoveryClient = createPasswordRecoveryClient();
+    const { error } = recoveryClient ? await recoveryClient.auth.resetPasswordForEmail(account.email, { redirectTo: passwordRecoveryRedirectUrl() }) : { error: new Error("Recovery service unavailable") };
+    if (error) console.error("Manager password recovery request failed", error.message);
+  }
+  return { memberId: memberId.data, sent: true };
 }
