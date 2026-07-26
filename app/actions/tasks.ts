@@ -1,41 +1,15 @@
 "use server";
-
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { toZonedDateIso } from "@/lib/today/date";
-
-const toggleSchema = z.object({ assignmentId: z.uuid(), completed: z.boolean() });
-export type TaskMutationResult = { ok: true } | { ok: false; message: string };
-
-export async function setTaskCompletion(assignmentId: string, completed: boolean): Promise<TaskMutationResult> {
-  const parsed = toggleSchema.safeParse({ assignmentId, completed });
-  if (!parsed.success) return { ok: false, message: "That task could not be updated." };
-  const context = await requireCurrentHouseholdContext();
-  if (context.source === "development-fixture") return { ok: true };
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) return { ok: false, message: "Tasks are temporarily unavailable." };
-  const completionDate = toZonedDateIso(new Date(), context.timeZone);
-  const { data: assignment } = await supabase
-    .from("task_assignments")
-    .select("id,family_member_id")
-    .eq("id", parsed.data.assignmentId)
-    .eq("family_member_id", context.familyMemberId)
-    .maybeSingle();
-  if (!assignment) return { ok: false, message: "You don’t have permission to update that task." };
-  const query = completed
-    ? supabase.from("task_completions").upsert({
-        task_assignment_id: assignment.id,
-        completion_date: completionDate,
-        completed_by_member_id: context.familyMemberId,
-      }, { onConflict: "task_assignment_id,completion_date" })
-    : supabase.from("task_completions").delete()
-        .eq("task_assignment_id", assignment.id)
-        .eq("completion_date", completionDate);
-  const { error } = await query;
-  if (error) return { ok: false, message: "That task wasn’t changed. Please try again." };
-  revalidatePath("/");
-  revalidatePath("/my-day");
-  return { ok: true };
-}
+const toggleSchema=z.object({assignmentId:z.uuid(),completed:z.boolean()});
+const taskSchema=z.object({title:z.string().trim().min(1).max(160),description:z.string().trim().max(2000).optional(),assigneeId:z.uuid(),dueDate:z.union([z.literal(""),z.iso.date()]),dueTime:z.string().optional(),category:z.enum(["chore","homework","routine","personal"]),priority:z.enum(["low","normal","high"]),recurrence:z.enum(["","daily","weekly","monthly"]),scope:z.enum(["household","member"])});
+export type TaskMutationResult={ok:true}|{ok:false;message:string};
+const refresh=()=>{revalidatePath("/");revalidatePath("/my-day");revalidatePath("/tasks");revalidatePath("/kenzie")};
+export async function setTaskCompletion(assignmentId:string,completed:boolean):Promise<TaskMutationResult>{const parsed=toggleSchema.safeParse({assignmentId,completed});if(!parsed.success)return{ok:false,message:"That task could not be updated."};const context=await requireCurrentHouseholdContext();if(context.source==="development-fixture")return{ok:true};const supabase=await createSupabaseServerClient();if(!supabase)return{ok:false,message:"Tasks are temporarily unavailable."};const completionDate=toZonedDateIso(new Date(),context.timeZone);const{data:assignment}=await supabase.from("task_assignments").select("id,family_member_id").eq("id",parsed.data.assignmentId).eq("family_member_id",context.familyMemberId).maybeSingle();if(!assignment)return{ok:false,message:"You don’t have permission to update that task."};const query=completed?supabase.from("task_completions").upsert({task_assignment_id:assignment.id,completion_date:completionDate,completed_by_member_id:context.familyMemberId},{onConflict:"task_assignment_id,completion_date"}):supabase.from("task_completions").delete().eq("task_assignment_id",assignment.id).eq("completion_date",completionDate);const{error}=await query;if(error)return{ok:false,message:"That task wasn’t changed. Please try again."};refresh();return{ok:true}}
+function parse(formData:FormData){return taskSchema.safeParse({title:formData.get("title"),description:String(formData.get("description")??""),assigneeId:formData.get("assigneeId"),dueDate:String(formData.get("dueDate")??""),dueTime:String(formData.get("dueTime")??""),category:formData.get("category"),priority:formData.get("priority"),recurrence:String(formData.get("recurrence")??""),scope:formData.get("scope")})}
+export async function saveTask(taskId:string|null,formData:FormData){const context=await requireCurrentHouseholdContext();if(!["household_manager","parent"].includes(context.role))return;const parsed=parse(formData);if(!parsed.success)return;const supabase=await createSupabaseServerClient();if(!supabase)return;const v=parsed.data;const row={household_id:context.householdId,created_by_member_id:context.familyMemberId,title:v.title,description:v.description||null,category:v.category,scope:v.scope,due_date:v.dueDate||null,due_time:v.dueTime||null,priority:v.priority,recurrence:v.recurrence||null,active:true,archived_at:null};if(taskId){await supabase.from("tasks").update(row).eq("id",taskId).eq("household_id",context.householdId);await supabase.from("task_assignments").delete().eq("task_id",taskId);await supabase.from("task_assignments").insert({task_id:taskId,family_member_id:v.assigneeId,assigned_by_member_id:context.familyMemberId})}else{const{data}=await supabase.from("tasks").insert(row).select("id").single();if(data)await supabase.from("task_assignments").insert({task_id:data.id,family_member_id:v.assigneeId,assigned_by_member_id:context.familyMemberId})}refresh()}
+export async function archiveTask(taskId:string){const context=await requireCurrentHouseholdContext();if(!["household_manager","parent"].includes(context.role))return;const supabase=await createSupabaseServerClient();if(!supabase)return;await supabase.from("tasks").update({active:false,archived_at:new Date().toISOString()}).eq("id",taskId).eq("household_id",context.householdId);refresh()}
+export async function deleteTask(taskId:string){const context=await requireCurrentHouseholdContext();if(!["household_manager","parent"].includes(context.role))return;const supabase=await createSupabaseServerClient();if(!supabase)return;await supabase.from("tasks").delete().eq("id",taskId).eq("household_id",context.householdId);refresh()}

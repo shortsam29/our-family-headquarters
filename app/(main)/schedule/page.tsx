@@ -3,34 +3,24 @@ import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, Summary
 import ScheduleView from "@/components/schedule/ScheduleView";
 import TodaySectionState from "@/components/today/TodaySectionState";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
-import { getScheduleData } from "@/lib/data/core";
+import { getManagedHouseholdMembers, getScheduleData } from "@/lib/data/core";
+import { toZonedDateIso } from "@/lib/today/date";
 
 export default async function SchedulePage() {
   const context = await requireCurrentHouseholdContext();
-  const state = await getScheduleData(context);
+  const [state,members] = await Promise.all([getScheduleData(context),getManagedHouseholdMembers(context)]);
   const events = state.status === "populated" ? state.data : [];
-
-  return (
-    <FeaturePage>
-      <FeaturePageHeader eyebrow="Household planning" title="Schedule" description="One trusted view of where the household needs to be, who is involved, and what the day holds." />
-
-      <FeatureSection title="At a glance" description="Household commitments stay authoritative here while Today and My Day show relevant references.">
-        <ResponsiveGrid columns={3}>
-          <SummaryCard title="Scheduled" detail={`${events.length} visible events`} variant="sage" />
-          <SummaryCard title="All-day items" detail={`${events.filter((event) => event.allDay).length} visible`} variant="neutral" />
-          <SummaryCard title="Relevant to you" detail={`${events.filter((event) => event.participantIds.includes(context.familyMemberId)).length} upcoming events`} variant="blush" />
-        </ResponsiveGrid>
-      </FeatureSection>
-
-      <FeatureSection title="Household calendar" description="Switch between a focused daily list and the week’s reading order.">
-        <TodaySectionState state={state} emptyTitle="The schedule is open" emptyMessage="Nothing is planned, and nothing has been overlooked." loadingLabel="Preparing the schedule" errorMessage="The schedule is temporarily unavailable.">
-          {(events) => <ScheduleView events={events} />}
-        </TodaySectionState>
-      </FeatureSection>
-
-      <FeatureSection title="A helpful observation">
-        <KenzieNote title="A note for the week" audience="family" message="The week has a little breathing room. The next important household event is already easy to find." />
-      </FeatureSection>
-    </FeaturePage>
-  );
+  const today=toZonedDateIso(new Date(),context.timeZone);
+  const canManage=["household_manager","parent"].includes(context.role);
+  return <FeaturePage>
+    <FeaturePageHeader eyebrow="Household calendar" title="Schedule" description="Plan family time directly, then see the same trusted events in Today, My Day, and Kenzie." />
+    <FeatureSection title="At a glance"><ResponsiveGrid columns={3}><SummaryCard title="Today" detail={`${events.filter(e=>e.date===today).length} events`} variant="sage"/><SummaryCard title="Upcoming" detail={`${events.filter(e=>e.date>today).length} events`} variant="neutral"/><SummaryCard title="Your events" detail={`${events.filter(e=>e.participantIds.includes(context.familyMemberId)).length} visible`} variant="blush"/></ResponsiveGrid></FeatureSection>
+    <FeatureSection title="Household calendar" description={canManage?"Choose any date or view, or add an event directly.":"Choose any date or view. A parent or household manager manages events."}>
+      <TodaySectionState state={state} emptyTitle="No upcoming events" emptyMessage="The calendar is open. Add an event when the family is ready." loadingLabel="Preparing the calendar" errorMessage="The calendar is temporarily unavailable.">
+        {()=> <ScheduleView events={events} members={members} canManage={canManage} today={today}/>}
+      </TodaySectionState>
+      {state.status==="empty" ? <ScheduleView events={[]} members={members} canManage={canManage} today={today}/> : null}
+    </FeatureSection>
+    <FeatureSection title="A helpful observation"><KenzieNote title="A note for the week" audience="family" message="Your calendar stays yours. I’ll use it to point out useful timing and conflicts, but I won’t change it without your approval." /></FeatureSection>
+  </FeaturePage>;
 }

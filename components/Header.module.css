@@ -5,7 +5,7 @@
   min-height: 76px;
   align-items: center;
   justify-content: center;
-  padding: 10px clamp(20px, 3vw, 44px) 10px
+  padding: max(10px, env(safe-area-inset-top)) clamp(20px, 3vw, 44px) 10px
     calc(var(--sidebar-width) + clamp(20px, 3vw, 44px));
   background: rgba(255, 253, 250, .96);
   border-bottom: 1px solid rgba(184, 170, 154, .38);
@@ -21,7 +21,7 @@
   .header { padding-left: clamp(20px, 3vw, 44px); }
 }
 @media (max-width: 620px) {
-  .header { min-height: 68px; justify-content: flex-start; padding-right: 124px; }
+  .header { min-height: calc(68px + env(safe-area-inset-top)); justify-content: flex-start; padding-right: max(124px, calc(112px + env(safe-area-inset-right))); padding-left: max(16px, env(safe-area-inset-left)); }
   .brand { font-size: clamp(1.3rem, 6vw, 1.65rem); text-align: left; }
   .userMenu { right: 12px; padding-right: 10px; }
   .userMenu > span:nth-child(2) { display: none; }

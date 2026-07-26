@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   /* Foundation palette */
   --color-warm-canvas: #f7f2ea;
   --color-soft-white: #fffdfc;
@@ -99,6 +99,7 @@
 
 html,
 body {
+  overflow-x: clip;
   min-height: 100%;
   margin: 0;
 }

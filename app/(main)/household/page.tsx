@@ -24,7 +24,7 @@ export default async function HouseholdPage() {
       <FeatureSection title="Household tools">
         <ResponsiveGrid columns={3}>
           <SummaryCard title="People" detail={<Link href="/family-hub">Manage family members →</Link>} />
-          <SummaryCard title="Plans" detail={<Link href="/schedule">Open the household schedule →</Link>} />
+          <SummaryCard title="Plans" detail={<><Link href="/schedule">Open the household schedule →</Link><br /><Link href="/tasks">Add a household task or reminder →</Link></>} />
           <SummaryCard title="Preferences" detail={<Link href="/settings">Review household settings →</Link>} />
         </ResponsiveGrid>
       </FeatureSection>

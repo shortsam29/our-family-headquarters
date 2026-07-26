@@ -1,5 +1,5 @@
 import { Badge, Card, EmptyState } from "@/components/design-system";
-import { createDomainRecord, removeDomainRecord, toggleShoppingItem, updateDomainRecord } from "@/app/actions/domains";
+import { clearCompletedShoppingItems, createDomainRecord, removeDomainRecord, toggleFinanceStatus, toggleShoppingItem, updateDomainRecord } from "@/app/actions/domains";
 import type { DomainRecord, DomainSlug } from "@/types/domains";
 import styles from "./DomainRoom.module.css";
 
@@ -15,7 +15,7 @@ const copy: Record<DomainSlug, { title: string; add: string; empty: string }> = 
 
 function ExtraFields({ slug }: { slug: DomainSlug }) {
   if (slug === "meals") return <><label>Planned date<input name="date" type="date" required /></label><label>Meal type<select name="mealType" defaultValue="dinner"><option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option><option value="snack">Snack</option></select></label></>;
-  if (slug === "shopping") return <><label>List<select name="listType" defaultValue="grocery"><option value="grocery">Grocery</option><option value="household">Household shopping</option></select></label><label>Category<input name="category" maxLength={80} /></label></>;
+  if (slug === "shopping") return <><label>List name<input name="listName" placeholder="Groceries" maxLength={100} /></label><label>List type<select name="listType" defaultValue="grocery"><option value="grocery">Grocery</option><option value="household">Household shopping</option></select></label><label>Quantity<input name="quantity" maxLength={40} /></label><label>Category or aisle<input name="category" maxLength={80} /></label><label>Priority<select name="priority" defaultValue="normal"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></label></>;
   if (slug === "pets") return <><label>Species<input name="species" required maxLength={80} /></label><label>Breed (optional)<input name="breed" maxLength={100} /></label></>;
   if (slug === "contacts") return <><label>Category<input name="category" required defaultValue="Emergency" maxLength={80} /></label><label>Phone<input name="phone" type="tel" /></label><label>Email<input name="email" type="email" /></label><label>Visibility<select name="visibility" defaultValue="household"><option value="household">Household</option><option value="adults">Adults only</option></select></label><label className={styles.check}><input name="emergency" type="checkbox" /> Emergency contact</label></>;
   if (slug === "vehicles") return <><label>Make<input name="make" maxLength={80} /></label><label>Model<input name="model" maxLength={80} /></label><label>Year<input name="year" type="number" min="1886" max="2200" /></label></>;
@@ -29,7 +29,7 @@ export function DomainRoom({ slug, records, canManage }: { slug: DomainSlug; rec
     <div className={styles.room}>
       {canCreate ? (
         <Card>
-          <h2 className="type-section-heading">{copy[slug].add}</h2>
+          <h2 className="type-section-heading">+ {copy[slug].add}</h2>
           <form action={createDomainRecord.bind(null, slug)} className={styles.form}>
             <label>{copy[slug].title}<input name="title" required maxLength={160} /></label>
             <ExtraFields slug={slug} />
@@ -39,6 +39,7 @@ export function DomainRoom({ slug, records, canManage }: { slug: DomainSlug; rec
         </Card>
       ) : <p className={styles.permission}>You can view this room. A parent or household manager manages its records.</p>}
 
+      {slug === "shopping" && records.some((record) => record.status === "purchased") ? <details><summary>Clear completed items</summary><p>This permanently removes purchased items from these lists.</p><form action={clearCompletedShoppingItems}><button className={styles.secondary} type="submit">Confirm clear completed</button></form></details> : null}
       {records.length === 0 ? <EmptyState title="This room is calm" description={copy[slug].empty} /> : (
         <ul className={styles.list}>
           {records.map((record) => (
@@ -51,6 +52,7 @@ export function DomainRoom({ slug, records, canManage }: { slug: DomainSlug; rec
                 {record.detail ? <p>{record.detail}</p> : null}
                 {record.date ? <p><time dateTime={record.date}>{record.date}</time></p> : null}
                 {record.notes ? <p className={styles.notes}>{record.notes}</p> : null}
+                {slug === "finance" && canManage ? <form action={toggleFinanceStatus.bind(null, record.id, record.status !== "paid")}><button type="submit" className={styles.secondary}>{record.status === "paid" ? "Mark unpaid" : "Mark paid"}</button></form> : null}
                 {slug === "shopping" ? (
                   <form action={toggleShoppingItem.bind(null, record.id, record.status !== "purchased")}>
                     <button type="submit" className={styles.secondary}>{record.status === "purchased" ? "Mark needed" : "Mark purchased"}</button>

@@ -12,29 +12,13 @@ function localDateInTimeZone(timeZone: string) {
   return toZonedDateIso(new Date(), timeZone);
 }
 
-function scheduleDateLabel(value: string, timeZone: string) {
-  const today = localDateInTimeZone(timeZone);
-  const tomorrowDate = new Date(`${today}T12:00:00Z`);
-  tomorrowDate.setUTCDate(tomorrowDate.getUTCDate() + 1);
-  const tomorrow = tomorrowDate.toISOString().slice(0, 10);
-  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
-  const eventDate = new Date(dateOnly ? `${value}T12:00:00Z` : value);
-  const eventLocalDate = dateOnly
-    ? value
-    : toZonedDateIso(eventDate, timeZone);
-
-  if (eventLocalDate === today) return "today";
-  if (eventLocalDate === tomorrow) return "tomorrow";
-  return new Intl.DateTimeFormat(undefined, { timeZone: dateOnly ? "UTC" : timeZone, weekday: "long" }).format(eventDate);
-}
-
 export async function getScheduleData(context: CurrentHouseholdContext): Promise<SectionState<ScheduleEvent[]>> {
   if (context.source === "development-fixture") return { status: "populated", data: scheduleEvents };
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { status: "error" };
   const { data, error } = await supabase
     .from("schedule_events")
-    .select("id,title,category,location,starts_at,ends_at,all_day_date,is_all_day,created_by_member_id,event_participants(family_member_id)")
+    .select("id,title,description,category,location,starts_at,ends_at,all_day_date,is_all_day,created_by_member_id,event_participants(family_member_id)")
     .eq("household_id", context.householdId)
     .is("cancelled_at", null)
     .order("starts_at", { ascending: true });
@@ -47,7 +31,9 @@ export async function getScheduleData(context: CurrentHouseholdContext): Promise
       return {
         id: event.id,
         title: event.title,
-        date: dateValue ? scheduleDateLabel(dateValue, context.timeZone) : "Date not set",
+        date: dateValue ? (event.is_all_day ? event.all_day_date! : toZonedDateIso(new Date(event.starts_at!), context.timeZone)) : "",
+        endDate: event.ends_at ? toZonedDateIso(new Date(event.ends_at), context.timeZone) : undefined,
+        description: event.description ?? undefined,
         startTime: event.starts_at ? new Intl.DateTimeFormat(undefined, { timeZone: context.timeZone, hour: "numeric", minute: "2-digit" }).format(new Date(event.starts_at)) : undefined,
         endTime: event.ends_at ? new Intl.DateTimeFormat(undefined, { timeZone: context.timeZone, hour: "numeric", minute: "2-digit" }).format(new Date(event.ends_at)) : undefined,
         allDay: event.is_all_day,
@@ -175,8 +161,8 @@ export async function getKenzieGuidance(
     status: "populated",
     data: createKenzieNote({
       audience: context.role === "child" ? "child" : "family",
-      scheduledCount: visibleSchedule.filter((event) => event.date === "today").length,
-      upcomingCount: visibleSchedule.filter((event) => event.date !== "today").length,
+      scheduledCount: visibleSchedule.filter((event) => event.date === today).length,
+      upcomingCount: visibleSchedule.filter((event) => event.date > today).length,
       assignedCount: visibleTasks.length,
       completedCount: visibleTasks.filter((task) => task.completed).length,
       overdueCount,
@@ -196,7 +182,7 @@ export async function getTodayExperienceData(context: CurrentHouseholdContext): 
   const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
   const todaySchedule: TodayExperienceData["schedule"] =
     schedule.status === "populated"
-      ? { status: "populated", data: schedule.data.slice(0, 3).map((event) => ({ id: event.id, title: event.title, daypart: "Morning" as const, scope: "household" as const })) }
+      ? { status: "populated", data: schedule.data.filter((event) => event.date === localDateInTimeZone(context.timeZone)).slice(0, 3).map((event) => ({ id: event.id, title: event.title, daypart: "Morning" as const, scope: "household" as const })) }
       : schedule.status === "error"
         ? { status: "error", message: schedule.message }
         : { status: schedule.status };

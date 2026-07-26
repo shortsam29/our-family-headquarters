@@ -14,7 +14,7 @@ const navigationItems: Array<{ label: string; subtitle?: string; href: string; i
 ];
 
 const moreDestinationPaths = new Set(["/contacts","/documents","/finance","/household","/meals","/pets","/settings",
-  "/help","/shopping","/vehicles"]);
+  "/help","/shopping","/tasks","/vehicles"]);
 
 function NavigationIcon({ name }: { name: string }) {
   const common = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
