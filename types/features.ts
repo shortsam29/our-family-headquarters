@@ -1,6 +1,6 @@
 import type { ContentScope, FamilyMember, KenzieNote, SectionState, TodayTask } from "./today";
 
-export type ScheduleView = "day" | "week" | "month" | "agenda";
+export type ScheduleView = "day" | "week" | "month";
 export type EventCategory = "household" | "family" | "school" | "work" | "appointment" | "celebration";
 
 export type ScheduleEvent = {

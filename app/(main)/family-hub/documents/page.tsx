@@ -9,7 +9,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
   const data = await getVaultDocuments(context, params.q);
   const canManage = context.role === "household_manager" || context.role === "parent";
   return <FeaturePage>
-    <FeaturePageHeader eyebrow="Family Vault" title="Documents" description="A secure, searchable home for the householdâ€™s important files and renewal dates." />
+    <FeaturePageHeader eyebrow="Family Vault" title="Documents" description="A secure, searchable home for the household’s important files and renewal dates." />
     {params.status ? <p role="status">The Family Vault was updated.</p> : null}
     {params.error || data.error ? <p role="alert">{data.error ?? "That Vault change could not be completed. Please review the file and try again."}</p> : null}
     <FeatureSection title="Find a document">

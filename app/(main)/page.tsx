@@ -3,8 +3,6 @@ import { Card, KenzieNote } from "@/components/design-system";
 import LocalDate from "@/components/today/LocalDate";
 import TodayCard from "@/components/today/TodayCard";
 import TodaySectionState from "@/components/today/TodaySectionState";
-import TodayToDoCard from "@/components/today/TodayToDoCard";
-import { setTaskCompletion } from "@/app/actions/tasks";
 import { FamilyCommunication } from "@/components/communication/FamilyCommunication";
 import { QuickAdd } from "@/components/quick-add/QuickAdd";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
@@ -21,7 +19,7 @@ function HouseholdPreviewCard({ item }: { item: HouseholdPreview }) {
       <h2 className={styles.previewTitle}>{item.title}</h2>
       <p>{item.message}</p>
       <Link className={styles.previewLabel} href={item.id === "upcoming" ? "/household" : item.id === "grocery" ? "/shopping?list=grocery" : "/shopping"}>
-        {item.count !== undefined ? `${item.count} ready · ` : ""}Preview →
+        {item.count !== undefined ? `${item.count} ready  â€¢  ` : ""}Preview â†’
       </Link>
     </Card>
   );
@@ -34,11 +32,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
   const todayIso = toZonedDateIso(new Date(), context.timeZone);
   const upcomingEvents = scheduleState.status === "populated" ? scheduleState.data.filter((event) => event.date > todayIso).slice(0, 5) : [];
   const canManage = ["household_manager", "parent"].includes(context.role);
-  const householdPreviews: SectionState<HouseholdPreview>[] = [
-    todayData.shopping,
-    todayData.grocery,
-    todayData.inbox,
-    todayData.upcoming,
+  const householdPreviews: Array<{ state: SectionState<HouseholdPreview>; title: string; emptyMessage: string }> = [
+    { state: todayData.grocery, title: "Priority Grocery Items", emptyMessage: "No priority groceries are waiting." },
+    { state: todayData.shopping, title: "Priority Household Shopping", emptyMessage: "No priority household purchases are waiting." },
   ];
   return (
     <main className={styles.mainContent}>
@@ -49,24 +45,24 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
               <div className={styles.miniSprig} aria-hidden="true"><i /><i /><span /></div>
               <h1 className={styles.welcomeTitle}>
                 Welcome home
-                <span className={styles.welcomeHeart} aria-hidden="true">♡</span>
+                <span className={styles.welcomeHeart} aria-hidden="true">â™¡</span>
               </h1>
               <p className={styles.welcomeMessage}>Everything your family needs for today will come together here.</p>
-              <div className={styles.botanicalDivider} aria-hidden="true"><span>♥</span></div>
+              <div className={styles.botanicalDivider} aria-hidden="true"><span>â™¥</span></div>
             </header>
 
             {feedback.status ? <p role="status">Your family headquarters was updated.</p> : null}
             {feedback.error ? <p role="alert">That item could not be saved. Please review it and try again.</p> : null}
             <div className={styles.quickAddSpacer}><QuickAdd members={members} today={todayIso} canManage={canManage} /></div>
 
-            <section className={styles.dashboardRegion} aria-label="Today’s dashboard">
+            <section className={styles.dashboardRegion} aria-label="Todayâ€™s dashboard">
               <div className={styles.primaryGrid}>
-                <TodayCard title="Today’s Schedule" eyebrow="Today’s schedule" className={styles.scheduleCard}>
+                <TodayCard title="Todayâ€™s Schedule" eyebrow="Todayâ€™s schedule" className={styles.scheduleCard}>
                   <TodaySectionState
                     state={todayData.schedule}
                     emptyTitle="No events today"
                     emptyMessage="The day is beautifully open. Nothing has been overlooked."
-                    loadingLabel="Checking today’s schedule"
+                    loadingLabel="Checking todayâ€™s schedule"
                     errorMessage="The schedule is temporarily unavailable."
                   >
                     {(items) => (
@@ -80,16 +76,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                   <TodaySectionState
                     state={todayData.weather}
                     emptyTitle="Weather is quiet"
-                    emptyMessage="There’s no weather summary to show yet."
+                    emptyMessage="Thereâ€™s no weather summary to show yet."
                     loadingLabel="Checking the weather"
                     errorMessage="Weather is unavailable, but the rest of today is ready."
                   >
                     {(weather) => (
                       <>
-                        <p className={styles.weatherTemperature}>{weather.temperature}°</p>
-                        <div className={styles.weatherIcon} aria-hidden="true">☁</div>
+                        <p className={styles.weatherTemperature}>{weather.temperature} degrees</p>
+                        <div className={styles.weatherIcon} aria-hidden="true">â˜</div>
                         <p className={styles.weatherCondition}>{weather.condition}</p>
-                        <small>Feels like {weather.feelsLike}°</small>
+                        <small>Feels like {weather.feelsLike} degrees</small>
                         <p className={styles.weatherMessage}>{weather.message}</p>
                       </>
                     )}
@@ -99,15 +95,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                   <TodaySectionState
                     state={todayData.dinner}
                     emptyTitle="Dinner is open"
-                    emptyMessage="There’s still plenty of time to choose something simple."
-                    loadingLabel="Checking tonight’s plan"
+                    emptyMessage="Thereâ€™s still plenty of time to choose something simple."
+                    loadingLabel="Checking tonightâ€™s plan"
                     errorMessage="Dinner details are temporarily unavailable."
                   >
                     {(dinner) => (
                       <>
                         <h3 className={styles.dinnerTitle}>{dinner.name}</h3>
                         {dinner.details ? <p className={styles.featureText}>{dinner.details}</p> : null}
-                        <div className={styles.dinnerMark} aria-hidden="true">♨</div>
+                        <div className={styles.dinnerMark} aria-hidden="true">â™¨</div>
                       </>
                     )}
                   </TodaySectionState>
@@ -115,18 +111,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
               </div>
 
               <div className={styles.dailyLifeGrid}>
-                <TodayToDoCard
-                  state={todayData.tasks}
-                  onToggle={context.source === "supabase" ? setTaskCompletion : undefined}
-                />
                 <section className={styles.kenzieSection} aria-labelledby="kenzie-heading">
                   <h2 id="kenzie-heading" className={styles.visuallyHidden}>Kenzie&apos;s daily note</h2>
                   <TodaySectionState
                     state={todayData.kenzie}
                     emptyTitle="A quiet moment"
-                    emptyMessage="Kenzie doesn’t have a note for today, and everything else is still here."
-                    loadingLabel="Kenzie’s note is on its way"
-                    errorMessage="Kenzie’s note is unavailable. Your household information still works normally."
+                    emptyMessage="Kenzie doesnâ€™t have a note for today, and everything else is still here."
+                    loadingLabel="Kenzieâ€™s note is on its way"
+                    errorMessage="Kenzieâ€™s note is unavailable. Your household information still works normally."
                   >
                     {(note) => (
                       <KenzieNote
@@ -137,7 +129,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                       />
                     )}
                   </TodaySectionState>
-                  <Link href="/kenzie" className={styles.kenzieLink}>Visit Kenzie&apos;s Desk →</Link>
+                  <Link href="/kenzie" className={styles.kenzieLink}>Visit Kenzie&apos;s Desk â†’</Link>
                 </section>
               </div>
             </section>
@@ -147,18 +139,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
             </section>
 
             <section className={styles.upcomingRegion} aria-labelledby="upcoming-events-title">
-              <div className={styles.regionHeading}><h2 id="upcoming-events-title">Upcoming Events</h2><Link href="/schedule">Open calendar →</Link></div>
+              <div className={styles.regionHeading}><h2 id="upcoming-events-title">Upcoming Events</h2><Link href="/schedule">Open calendar â†’</Link></div>
               {upcomingEvents.length ? <div className={styles.upcomingList}>{upcomingEvents.map((event) => <Card key={event.id}><time dateTime={event.date}>{event.date}</time><h3>{event.title}</h3><p>{event.allDay ? "All day" : event.startTime}</p></Card>)}</div> : <div className={styles.actionableEmpty}><p>No upcoming events.</p><Link href="/schedule">Add Event</Link></div>}
             </section>
 
             <section className={styles.supportingRegion} id="family-hub" aria-label="Supporting household information">
               <div className={styles.previewGrid}>
-                {householdPreviews.map((previewState, index) => (
+                {householdPreviews.map((previewState) => (
                   <TodaySectionState
-                    key={index}
-                    state={previewState}
-                    emptyTitle="Nothing waiting"
-                    emptyMessage="This area is clear for now."
+                    key={previewState.title}
+                    state={previewState.state}
+                    emptyTitle={previewState.title}
+                    emptyMessage={previewState.emptyMessage}
                     loadingLabel="Getting this preview ready"
                     errorMessage="This preview is temporarily unavailable."
                   >

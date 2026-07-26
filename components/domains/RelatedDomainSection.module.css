@@ -12,3 +12,4 @@
 .heading h3 { margin-top: var(--space-3); }
 .list p, .list time, .list form { display: block; margin-top: var(--space-3); }
 @media (max-width: 700px) { .form, .list { grid-template-columns: 1fr; } .wide, .form button { grid-column: auto; } }
+.addPanel>summary{display:inline-flex;min-height:46px;align-items:center;padding:var(--space-3) var(--space-5);border-radius:var(--radius-pill);background:var(--color-action-primary);color:white;font-weight:700;cursor:pointer;list-style:none}.addPanel[open]>summary{margin-bottom:var(--space-4)}

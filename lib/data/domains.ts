@@ -21,7 +21,7 @@ function mapRow(slug: DomainSlug, row: Row): DomainRecord {
   };
   if (slug === "pets") return {
     id: id(row), kind: "Pet", title: text(row.name) ?? "Pet",
-    detail: [text(row.species), text(row.breed)].filter(Boolean).join(" Â· "),
+    detail: [text(row.species), text(row.breed)].filter(Boolean).join("  •  "),
     notes: text(row.notes),
   };
   if (slug === "contacts") return {
