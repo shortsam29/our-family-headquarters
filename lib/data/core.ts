@@ -151,13 +151,14 @@ export async function getKenzieGuidance(
   schedule: SectionState<ScheduleEvent[]>,
   tasks: SectionState<TodayTask[]>,
   signals: Awaited<ReturnType<typeof getDomainSignals>>,
+  includePersonalTasks = true,
 ): Promise<SectionState<KenzieNote>> {
   if (context.source === "development-fixture") return todayMockData.kenzie;
   const today = localDateInTimeZone(context.timeZone);
   let overdueCount = 0;
   let conversationCount = 0;
   const supabase = await createSupabaseServerClient();
-  if (supabase) {
+  if (supabase && includePersonalTasks) {
     const { data } = await supabase
       .from("task_assignments")
       .select("tasks!inner(due_date,active),task_completions(completion_date)")
@@ -167,10 +168,12 @@ export async function getKenzieGuidance(
       const task = assignment.tasks as unknown as { due_date: string | null };
       return Boolean(task.due_date && task.due_date < today && !(assignment.task_completions ?? []).length);
     }).length;
+  }
+  if (supabase) {
     const conversationResult = await supabase.from("family_conversations").select("id", { count: "exact", head: true }).eq("household_id", context.householdId).is("handled_at", null);
     conversationCount = conversationResult.count ?? 0;
   }
-  const visibleTasks = tasks.status === "populated" ? tasks.data : [];
+  const visibleTasks = includePersonalTasks && tasks.status === "populated" ? tasks.data : [];
   const visibleSchedule = schedule.status === "populated" ? schedule.data : [];
   return {
     status: "populated",
@@ -194,8 +197,9 @@ export async function getKenzieGuidance(
 
 export async function getTodayExperienceData(context: CurrentHouseholdContext): Promise<TodayExperienceData> {
   if (context.source === "development-fixture") return todayMockData;
-  const [schedule, tasks, signals] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context)]);
-  const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
+  const [schedule, signals] = await Promise.all([getScheduleData(context), getDomainSignals(context)]);
+  const personalTasks: SectionState<TodayTask[]> = { status: "empty" };
+  const kenzie = await getKenzieGuidance(context, schedule, personalTasks, signals, false);
   const todaySchedule: TodayExperienceData["schedule"] =
     schedule.status === "populated"
       ? { status: "populated", data: schedule.data.filter((event) => event.date === localDateInTimeZone(context.timeZone)).slice(0, 3).map((event) => ({ id: event.id, title: event.title, daypart: "Morning" as const, scope: "household" as const })) }
@@ -210,7 +214,7 @@ export async function getTodayExperienceData(context: CurrentHouseholdContext): 
       role: context.role === "child" ? "child" : "adult",
     },
     schedule: todaySchedule,
-    tasks,
+    tasks: personalTasks,
     weather: { status: "empty" },
     dinner: signals.meal ? { status: "populated", data: { id: "tonight", name: signals.meal, scope: "household" } } : { status: "empty" },
     familyUpdates: { status: "empty" },
