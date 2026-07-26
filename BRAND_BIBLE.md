@@ -30,7 +30,7 @@ This application is not intended to feel like business software, a productivity 
 
 The goal is to reduce stress by making everyday life easier to manage while creating a warm and enjoyable experience that families genuinely look forward to using.
 
-Every screen, interaction, and feature should reinforce the feeling that this is the family's shared homeâ€”not simply another app.
+Every screen, interaction, and feature should reinforce the feeling that this is the family's shared home—not simply another app.
 
 Our Family Headquarters should become the trusted place where schedules, meals, memories, finances, documents, routines, celebrations, and everyday moments come together naturally.
 

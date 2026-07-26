@@ -4,12 +4,13 @@ import { createKenzieNote } from "@/lib/kenzie/intelligence";
 
 const migration = readFileSync("supabase/migrations/20260725220000_family_communication.sql", "utf8");
 const scheduleAction = readFileSync("app/actions/schedule.ts", "utf8");
+const scheduleInput = readFileSync("lib/schedule/event-input.ts", "utf8");
 
 describe("Version 1.1.1 usability safeguards", () => {
   it("accepts the family category and supplies a one-hour end when omitted", () => {
-    expect(scheduleAction).toContain('"household","family","school"');
-    expect(scheduleAction).toContain("60 * 60 * 1000");
-    expect(scheduleAction).toContain("redirect(`${returnTo}?error=event`)");
+    expect(scheduleInput).toContain('"household","family","school"');
+    expect(scheduleInput).toContain("+3600000");
+    expect(scheduleAction).toContain('status: "success"');
   });
   it("creates household-isolated communication with role-aware policies", () => {
     expect(migration).toContain("create table public.family_conversations");
