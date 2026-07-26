@@ -10,6 +10,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
   if (!auth.user) redirect("/sign-in?next=/onboarding");
   const { data: membership } = await supabase.from("household_memberships").select("id").eq("user_id", auth.user.id).eq("status", "active").maybeSingle();
   if (membership) redirect("/");
+  if (auth.user.user_metadata?.registration_intent === "join_household") redirect("/join-household");
   const { error } = await searchParams;
   const savedName = typeof auth.user.user_metadata?.display_name === "string" ? auth.user.user_metadata.display_name : "";
   return <main className={styles.page}>

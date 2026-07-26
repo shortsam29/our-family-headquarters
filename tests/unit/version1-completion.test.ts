@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildPriorityObservations } from "@/lib/data/kenzie-dashboard";
 
-const migration = readFileSync(join(process.cwd(), "supabase/migrations/20260724190000_version1_completion.sql"), "utf8");
+const migration = readFileSync(join(process.cwd(), "supabase/migrations/20260724190000_version1_completion.sql"), "utf8").replace(/\r\n/g, "\n");
 
 describe("Version 1 completion", () => {
   it.each(["household_memories", "kenzie_preferences", "kenzie_tomorrow_plans"])("creates and protects %s", (table) => {

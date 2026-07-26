@@ -25,6 +25,8 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <h2>New to Our Family Headquarters?</h2>
         <p>Create your family&apos;s headquarters.</p>
         <Link href="/create-household">Create Household</Link>
+        <p>Already have a family join code?</p>
+        <Link href="/join-household">Join your family</Link>
       </div>
     </section>
   </main>;

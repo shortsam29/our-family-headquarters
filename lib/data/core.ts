@@ -127,6 +127,7 @@ export type ManagedFamilyMember = {
   displayName: string;
   role: CurrentHouseholdContext["role"];
   status: "active" | "inactive" | "archived";
+  linkedAccount: boolean;
 };
 
 export async function getManagedHouseholdMembers(context: CurrentHouseholdContext): Promise<ManagedFamilyMember[]> {
@@ -135,7 +136,7 @@ export async function getManagedHouseholdMembers(context: CurrentHouseholdContex
   if (!supabase) return [];
   const { data } = await supabase
     .from("family_members")
-    .select("id,display_name,role,status")
+    .select("id,display_name,role,status,linked_user_id")
     .eq("household_id", context.householdId)
     .order("created_at");
   return (data ?? []).map((member) => ({
@@ -143,6 +144,7 @@ export async function getManagedHouseholdMembers(context: CurrentHouseholdContex
     displayName: member.display_name,
     role: member.role as ManagedFamilyMember["role"],
     status: member.status as ManagedFamilyMember["status"],
+    linkedAccount: Boolean(member.linked_user_id),
   }));
 }
 
@@ -238,4 +240,19 @@ export async function getTodayExperienceData(context: CurrentHouseholdContext): 
     } : { status: "empty" },
     kenzie,
   };
+}
+
+export type HouseholdInvitationSummary = {
+  id: string;
+  familyMemberId: string;
+  status: "active" | "redeemed" | "disabled";
+  expiresAt: string;
+};
+
+export async function getHouseholdInvitations(context: CurrentHouseholdContext): Promise<HouseholdInvitationSummary[]> {
+  if (context.source === "development-fixture" || !["household_manager", "parent"].includes(context.role)) return [];
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  const { data } = await supabase.from("household_invitations").select("id,family_member_id,status,expires_at").eq("household_id", context.householdId).order("created_at", { ascending: false });
+  return (data ?? []).map((row) => ({ id: row.id, familyMemberId: row.family_member_id, status: row.status as HouseholdInvitationSummary["status"], expiresAt: row.expires_at }));
 }

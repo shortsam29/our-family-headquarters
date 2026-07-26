@@ -16,6 +16,15 @@ export const registrationSchema = z.object({
   path: ["confirmPassword"],
 });
 
+export const invitationCodeSchema = z.string()
+  .trim()
+  .transform((value) => value.replaceAll("-", "").toUpperCase())
+  .pipe(z.string().regex(/^[A-F0-9]{16}$/, "Enter the 16-character family join code."));
+
+export const invitedRegistrationSchema = registrationSchema.safeExtend({
+  invitationCode: invitationCodeSchema,
+});
+
 export function displayName(firstName: string, lastName?: string) {
   return [firstName.trim(), lastName?.trim()].filter(Boolean).join(" ");
 }

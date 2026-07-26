@@ -18,7 +18,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     {feedback.setup === "1" ? <FeatureSection title="Finish setting up your family home" description="The household is ready. Complete these calm, secure steps in any order.">
       <ol className={styles.setupSteps}>
         <li><strong>Check household basics</strong><span>Confirm the name and time zone below.</span></li>
-        <li><strong>Add family members</strong><span>Create profiles manually in Family Hub. Account invitations can be added later when email delivery is configured.</span><Link href="/family-hub">Open Family Hub →</Link></li>
+        <li><strong>Add family members</strong><span>Create family profiles and private join codes in Family Hub.</span><Link href="/family-hub">Open Family Hub →</Link></li>
         <li><strong>Choose Kenzie preferences</strong><span>Select greeting, planning, and reminder styles.</span><Link href="/kenzie">Open Kenzie →</Link></li>
         <li><strong>Finish</strong><span>Your shared family home is ready for daily use.</span><Link href="/">Go to Today’s Headquarters →</Link></li>
       </ol>

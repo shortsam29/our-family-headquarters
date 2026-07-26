@@ -5,13 +5,13 @@ import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, Summary
 import TodaySectionState from "@/components/today/TodaySectionState";
 import { familyHubUpdates, householdAssets } from "@/lib/features/mock-data";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
-import { getHouseholdMembers, getManagedHouseholdMembers } from "@/lib/data/core";
+import { getHouseholdInvitations, getHouseholdMembers, getManagedHouseholdMembers } from "@/lib/data/core";
 import { getHouseholdAssetSummaries } from "@/lib/data/household-assets";
 
 export default async function FamilyHubPage({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const context = await requireCurrentHouseholdContext();
   const feedback = await searchParams;
-  const [membersState, managedMembers, liveAssets] = await Promise.all([getHouseholdMembers(context), getManagedHouseholdMembers(context), getHouseholdAssetSummaries(context)]);
+  const [membersState, managedMembers, invitations, liveAssets] = await Promise.all([getHouseholdMembers(context), getManagedHouseholdMembers(context), getHouseholdInvitations(context), getHouseholdAssetSummaries(context)]);
   const canManageMembers = context.role === "household_manager" || context.role === "parent";
   return (
     <FeaturePage>
@@ -35,8 +35,8 @@ export default async function FamilyHubPage({ searchParams }: { searchParams: Pr
       </FeatureSection>
 
       {canManageMembers ? (
-        <FeatureSection title="Manage family members" description="Add household profiles or update names, roles, and active status. Account invitations remain separate.">
-          <FamilyMemberManager members={managedMembers} currentMemberId={context.familyMemberId} />
+        <FeatureSection title="Manage family members" description="Add family profiles, create secure join codes, and manage household access.">
+          <FamilyMemberManager members={managedMembers} currentMemberId={context.familyMemberId} invitations={invitations} />
         </FeatureSection>
       ) : null}
 
