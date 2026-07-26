@@ -12,6 +12,18 @@ function localDateInTimeZone(timeZone: string) {
   return toZonedDateIso(new Date(), timeZone);
 }
 
+function localTimeInTimeZone(value: string, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(value));
+  const hour = parts.find((part) => part.type === "hour")?.value ?? "00";
+  const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
+  return `${hour}:${minute}`;
+}
+
 export async function getScheduleData(context: CurrentHouseholdContext): Promise<SectionState<ScheduleEvent[]>> {
   if (context.source === "development-fixture") return { status: "populated", data: scheduleEvents };
   const supabase = await createSupabaseServerClient();
@@ -34,8 +46,8 @@ export async function getScheduleData(context: CurrentHouseholdContext): Promise
         date: dateValue ? (event.is_all_day ? event.all_day_date! : toZonedDateIso(new Date(event.starts_at!), context.timeZone)) : "",
         endDate: event.ends_at ? toZonedDateIso(new Date(event.ends_at), context.timeZone) : undefined,
         description: event.description ?? undefined,
-        startTime: event.starts_at ? new Intl.DateTimeFormat(undefined, { timeZone: context.timeZone, hour: "numeric", minute: "2-digit" }).format(new Date(event.starts_at)) : undefined,
-        endTime: event.ends_at ? new Intl.DateTimeFormat(undefined, { timeZone: context.timeZone, hour: "numeric", minute: "2-digit" }).format(new Date(event.ends_at)) : undefined,
+        startTime: event.starts_at ? localTimeInTimeZone(event.starts_at, context.timeZone) : undefined,
+        endTime: event.ends_at ? localTimeInTimeZone(event.ends_at, context.timeZone) : undefined,
         allDay: event.is_all_day,
         category: event.category,
         ownerId: event.created_by_member_id,
