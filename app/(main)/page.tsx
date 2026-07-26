@@ -8,7 +8,7 @@ import { FamilyCommunication } from "@/components/communication/FamilyCommunicat
 import { QuickAdd } from "@/components/quick-add/QuickAdd";
 import { HouseholdWeatherCard, WeatherLoadingCard } from "@/components/weather/WeatherCard";
 import { requireCurrentHouseholdContext } from "@/lib/auth/context";
-import { getScheduleData, getTodayExperienceData } from "@/lib/data/core";
+import { getManagedHouseholdMembers, getScheduleData, getTodayExperienceData } from "@/lib/data/core";
 import { getFamilyCommunication } from "@/lib/data/communications";
 import { toZonedDateIso } from "@/lib/today/date";
 import type { HouseholdPreview, SectionState } from "@/types/today";
@@ -30,7 +30,7 @@ function HouseholdPreviewCard({ item }: { item: HouseholdPreview }) {
 export default async function Home({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const context = await requireCurrentHouseholdContext();
   const feedback = await searchParams;
-  const [todayData, scheduleState, communication] = await Promise.all([getTodayExperienceData(context), getScheduleData(context), getFamilyCommunication(context)]);
+  const [todayData, scheduleState, members, communication] = await Promise.all([getTodayExperienceData(context), getScheduleData(context), getManagedHouseholdMembers(context), getFamilyCommunication(context)]);
   const todayIso = toZonedDateIso(new Date(), context.timeZone);
   const upcomingEvents = scheduleState.status === "populated" ? scheduleState.data.filter((event) => event.date > todayIso).slice(0, 5) : [];
   const canManage = ["household_manager", "parent"].includes(context.role);
@@ -55,7 +55,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
 
             {feedback.status ? <p role="status">Your family headquarters was updated.</p> : null}
             {feedback.error ? <p role="alert">That item could not be saved. Please review it and try again.</p> : null}
-            <div className={styles.quickAddSpacer}><QuickAdd today={todayIso} canManage={canManage} /></div>
+            <div className={styles.quickAddSpacer}><QuickAdd members={members} today={todayIso} canManage={canManage} /></div>
 
             <section className={styles.dashboardRegion} aria-label="Today’s dashboard">
               <div className={styles.primaryGrid}>
