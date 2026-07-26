@@ -16,12 +16,12 @@ function mapRow(slug: DomainSlug, row: Row): DomainRecord {
   if (slug === "shopping") return {
     id: id(row), kind: text((row.shopping_lists as Row | null)?.list_type) === "grocery" ? "Grocery" : "Household shopping",
     title: text(row.name) ?? "Shopping item",
-    detail: [row.quantity, text(row.unit)].filter(Boolean).join(" "),
+    detail: [[row.quantity, text(row.unit)].filter(Boolean).join(" "), text(row.store)].filter(Boolean).join(" · "),
     status: text(row.status), notes: text(row.notes),
   };
   if (slug === "pets") return {
     id: id(row), kind: "Pet", title: text(row.name) ?? "Pet",
-    detail: [text(row.species), text(row.breed)].filter(Boolean).join(" · "),
+    detail: [text(row.species), text(row.breed)].filter(Boolean).join(" Â· "),
     notes: text(row.notes),
   };
   if (slug === "contacts") return {
@@ -57,7 +57,7 @@ export async function getDomainRoomData(
   const query = slug === "meals"
     ? supabase.from("meal_plan_entries").select("id,name,meal_type,planned_date,status,notes")
     : slug === "shopping"
-      ? supabase.from("shopping_list_items").select("id,name,quantity,unit,status,notes,shopping_lists!inner(list_type)")
+      ? supabase.from("shopping_list_items").select("id,name,quantity,unit,store,status,notes,shopping_lists!inner(list_type)")
       : slug === "pets"
         ? supabase.from("pets").select("id,name,species,breed,notes").eq("active", true)
         : slug === "contacts"

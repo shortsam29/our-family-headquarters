@@ -10,7 +10,7 @@ const eventSchema = z.object({
   title: z.string().trim().min(1).max(160), date: z.iso.date(), allDay: z.boolean(),
   startTime: z.string().optional(), endTime: z.string().optional(), location: z.string().trim().max(240).optional(),
   category: z.enum(["household","family","school","work","appointment","celebration"]), notes: z.string().trim().max(2000).optional(),
-  participantIds: z.array(z.uuid()).default([]), recurrence: z.enum(["","daily","weekly","monthly"]), reminderMinutes: z.union([z.literal(""),z.coerce.number().int().min(0).max(10080)]),
+  participantIds: z.array(z.uuid()).default([]), recurrence: z.enum(["","daily","weekly","monthly","yearly"]), reminderMinutes: z.union([z.literal(""),z.coerce.number().int().min(0).max(10080)]),
 });
 
 function offsetMinutes(date: Date, timeZone: string) {

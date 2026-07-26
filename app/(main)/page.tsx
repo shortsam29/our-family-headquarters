@@ -20,7 +20,7 @@ function HouseholdPreviewCard({ item }: { item: HouseholdPreview }) {
       <span className={styles.previewIcon} aria-hidden="true">{item.symbol}</span>
       <h2 className={styles.previewTitle}>{item.title}</h2>
       <p>{item.message}</p>
-      <Link className={styles.previewLabel} href={item.id === "upcoming" ? "/household" : item.id === "grocery" ? "/grocery" : "/shopping"}>
+      <Link className={styles.previewLabel} href={item.id === "upcoming" ? "/household" : item.id === "grocery" ? "/shopping?list=grocery" : "/shopping"}>
         {item.count !== undefined ? `${item.count} ready · ` : ""}Preview →
       </Link>
     </Card>
@@ -143,7 +143,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
             </section>
 
             <section className={styles.communicationRegion} id="family-conversations" aria-label="Family communication">
-              <FamilyCommunication conversations={communication.conversations} announcements={communication.announcements} canAnnounce={canManage} />
+              <FamilyCommunication conversations={communication.conversations} announcements={communication.announcements} canAnnounce={canManage} preview />
             </section>
 
             <section className={styles.upcomingRegion} aria-labelledby="upcoming-events-title">

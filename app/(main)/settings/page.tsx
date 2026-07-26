@@ -1,39 +1,12 @@
 import Link from "next/link";
-import { Card } from "@/components/design-system";
-import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, SummaryCard } from "@/components/features/FeaturePage";
-import { updateHouseholdPreferences } from "@/app/actions/settings";
-import { requireCurrentHouseholdContext } from "@/lib/auth/context";
+import {Card} from "@/components/design-system";
+import {FeaturePage,FeaturePageHeader,FeatureSection,ResponsiveGrid,SummaryCard} from "@/components/features/FeaturePage";
+import {FamilyMemberManager} from "@/components/family/FamilyMemberManager";
+import {saveKenziePreferences} from "@/app/actions/kenzie";
+import {updateHouseholdPreferences} from "@/app/actions/settings";
+import {requireCurrentHouseholdContext} from "@/lib/auth/context";
+import {getHouseholdInvitations,getManagedHouseholdMembers} from "@/lib/data/core";
+import {getKenzieDashboard} from "@/lib/data/kenzie-dashboard";
 import styles from "./settings.module.css";
-
-const timeZones = ["America/New_York","America/Chicago","America/Denver","America/Los_Angeles","UTC"];
-
-export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ status?: string; error?: string; setup?: string }> }) {
-  const context = await requireCurrentHouseholdContext();
-  const feedback = await searchParams;
-  const canManage = context.role === "household_manager";
-  return <FeaturePage>
-    <FeaturePageHeader eyebrow="Settings" title="Household Preferences" description="The shared details that keep dates, times, and household identity consistent." />
-    {feedback.status ? <p role="status">Household preferences saved.</p> : null}
-    {feedback.error ? <p role="alert">Those preferences could not be saved. Please review the form and try again.</p> : null}
-    {feedback.setup === "1" ? <FeatureSection title="Finish setting up your family home" description="The household is ready. Complete these calm, secure steps in any order.">
-      <ol className={styles.setupSteps}>
-        <li><strong>Check household basics</strong><span>Confirm the name and time zone below.</span></li>
-        <li><strong>Add family members</strong><span>Create family profiles and private join codes in Family Hub.</span><Link href="/family-hub">Open Family Hub →</Link></li>
-        <li><strong>Choose Kenzie preferences</strong><span>Select greeting, planning, and reminder styles.</span><Link href="/kenzie">Open Kenzie →</Link></li>
-        <li><strong>Finish</strong><span>Your shared family home is ready for daily use.</span><Link href="/">Go to Today’s Headquarters →</Link></li>
-      </ol>
-    </FeatureSection> : null}
-    <FeatureSection title="Current household"><ResponsiveGrid columns={3}>
-      <SummaryCard title="Household name" detail={context.householdName} variant="sage" />
-      <SummaryCard title="Time zone" detail={context.timeZone} variant="neutral" />
-      <SummaryCard title="Your role" detail={context.role.replaceAll("_", " ")} variant="blush" />
-    </ResponsiveGrid></FeatureSection>
-    <FeatureSection title="Shared preferences" description={canManage ? "Changes apply to every member of this household." : "Only the household manager can change shared preferences."}>
-      {canManage ? <Card><form action={updateHouseholdPreferences} className={styles.form}>
-        <label>Household name<input name="name" defaultValue={context.householdName} required maxLength={120} /></label>
-        <label>Household time zone<select name="timeZone" defaultValue={context.timeZone}>{!timeZones.includes(context.timeZone) ? <option value={context.timeZone}>{context.timeZone}</option> : null}{timeZones.map((timeZone) => <option key={timeZone} value={timeZone}>{timeZone}</option>)}</select></label>
-        <button type="submit">Save household preferences</button>
-      </form></Card> : <p className="type-supporting">Ask the household manager when a shared setting needs to change.</p>}
-    </FeatureSection>
-  </FeaturePage>;
-}
+const timeZones=["America/New_York","America/Chicago","America/Denver","America/Los_Angeles","UTC"];
+export default async function SettingsPage(){const context=await requireCurrentHouseholdContext();const canManage=["household_manager","parent"].includes(context.role);const[members,invitations,kenzie]=await Promise.all([getManagedHouseholdMembers(context),getHouseholdInvitations(context),getKenzieDashboard(context)]);return <FeaturePage><FeaturePageHeader eyebrow="Administration" title="Settings" description="Household administration, access, preferences, integrations, help, and account controls."/><FeatureSection title="Household settings"><ResponsiveGrid columns={3}><SummaryCard title="Household" detail={context.householdName}/><SummaryCard title="Time zone" detail={context.timeZone}/><SummaryCard title="Your role" detail={context.role.replaceAll("_"," ")}/></ResponsiveGrid>{canManage?<Card><form action={updateHouseholdPreferences} className={styles.form}><label>Household name<input name="name" defaultValue={context.householdName} required maxLength={120}/></label><label>Timezone<select name="timeZone" defaultValue={context.timeZone}>{!timeZones.includes(context.timeZone)?<option>{context.timeZone}</option>:null}{timeZones.map(x=><option key={x}>{x}</option>)}</select></label><button>Save household preferences</button></form></Card>:null}</FeatureSection>{canManage?<FeatureSection title="Manage Members, Roles, Join Codes & Invitations"><FamilyMemberManager members={members} currentMemberId={context.familyMemberId} invitations={invitations}/></FeatureSection>:null}{canManage?<FeatureSection title="Family & Kenzie Preferences"><Card><form action={saveKenziePreferences} className={styles.form}><label>Greeting style<select name="greetingStyle" defaultValue={kenzie.preferences.greetingStyle}><option value="warm">Warm</option><option value="brief">Brief</option><option value="playful">Playful</option></select></label><label>Reminder style<select name="reminderStyle" defaultValue={kenzie.preferences.reminderStyle}><option value="gentle">Gentle</option><option value="direct">Direct</option><option value="minimal">Minimal</option></select></label><label>Planning detail<select name="planningBehavior" defaultValue={kenzie.preferences.planningBehavior}><option value="minimal">Minimal</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label><button>Save family preferences</button></form></Card></FeatureSection>:null}<FeatureSection title="API Integrations"><Card><p className="type-supporting">External calendar, weather, banking, email, and AI providers are not connected. Your family home continues to work without them.</p></Card></FeatureSection><FeatureSection title="Help & About and Account"><p><Link href="/help">Open Help & About →</Link></p></FeatureSection></FeaturePage>}

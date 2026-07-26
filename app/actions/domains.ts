@@ -31,7 +31,7 @@ function mondayIso(dateValue?: string) {
 export async function createDomainRecord(slugValue: string, formData: FormData) {
   if (!isDomainSlug(slugValue)) return;
   const slug = slugValue;
-  const destination = slug === "shopping" && formData.get("listType") === "grocery" ? "/grocery" : `/${slug}`;
+  const destination = slug === "shopping" ? "/shopping" : `/${slug}`;
   const context = await requireCurrentHouseholdContext();
   if (slug !== "shopping" && !canManage(context.role)) route(slug, "error", destination);
   const parsed = baseSchema.safeParse({ title: formData.get("title"), notes: formData.get("notes") || undefined });
@@ -56,7 +56,7 @@ export async function createDomainRecord(slugValue: string, formData: FormData) 
   } else if (slug === "shopping") {
     const listType = z.enum(["grocery", "household"]).safeParse(formData.get("listType"));
     if (!listType.success) route(slug, "error", destination);
-    const listName = String(formData.get("listName") || "").trim() || (listType.data === "grocery" ? "Groceries" : "Household Shopping");
+    const listName = listType.data === "grocery" ? "Grocery List" : "Household Shopping List";
     const { data: list, error: listError } = await supabase.from("shopping_lists").upsert({
       ...common, name: listName, list_type: listType.data, created_by_member_id: context.familyMemberId,
     }, { onConflict: "household_id,name,list_type" }).select("id").single();
@@ -65,19 +65,20 @@ export async function createDomainRecord(slugValue: string, formData: FormData) 
       ...common, shopping_list_id: list.id, name: parsed.data.title, notes: parsed.data.notes,
       category: String(formData.get("category") || "").trim() || null,
       quantity: String(formData.get("quantity") || "").trim() || null,
+      store: String(formData.get("store") || "").trim() || null,
       priority: ["low", "normal", "high"].includes(String(formData.get("priority"))) ? String(formData.get("priority")) : "normal",
       added_by_member_id: context.familyMemberId,
     }));
   } else if (slug === "pets") {
     const species = z.string().trim().min(1).max(80).safeParse(formData.get("species"));
     if (!species.success) route(slug, "error", destination);
-    ({ error } = await supabase.from("pets").insert({ ...common, name: parsed.data.title, species: species.data, breed: String(formData.get("breed") || "").trim() || null, notes: parsed.data.notes }));
+    ({ error } = await supabase.from("pets").insert({ ...common, name: parsed.data.title, species: species.data, breed: String(formData.get("breed") || "").trim() || null, birth_date: formData.get("birthDate") || null, notes: parsed.data.notes }));
   } else if (slug === "contacts") {
     ({ error } = await supabase.from("household_contacts").insert({
-      ...common, name: parsed.data.title, category: String(formData.get("category") || "general"),
+      ...common, name: parsed.data.title, category: "general",
       phone: String(formData.get("phone") || "").trim() || null, email: String(formData.get("email") || "").trim() || null,
-      is_emergency: formData.get("emergency") === "on",
-      visibility: formData.get("visibility") === "adults" ? "adults" : "household", notes: parsed.data.notes,
+      is_emergency: false,
+      visibility: "household", notes: parsed.data.notes,
     }));
   } else if (slug === "vehicles") {
     const yearValue = String(formData.get("year") || "");
@@ -110,7 +111,7 @@ export async function createDomainRecord(slugValue: string, formData: FormData) 
 export async function updateDomainRecord(slugValue: string, recordId: string, formData: FormData) {
   if (!isDomainSlug(slugValue) || !idSchema.safeParse(recordId).success) return;
   const slug = slugValue;
-  const destination = slug === "shopping" && formData.get("listType") === "grocery" ? "/grocery" : `/${slug}`;
+  const destination = slug === "shopping" ? "/shopping" : `/${slug}`;
   const context = await requireCurrentHouseholdContext();
   if (slug !== "shopping" && !canManage(context.role)) route(slug, "error", destination);
   const parsed = baseSchema.safeParse({ title: formData.get("title"), notes: formData.get("notes") || undefined });

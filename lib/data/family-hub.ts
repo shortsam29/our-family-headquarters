@@ -1,0 +1,3 @@
+import type{CurrentHouseholdContext}from"@/lib/auth/context";import{createSupabaseServerClient}from"@/lib/supabase/server";
+export async function getPasswords(c:CurrentHouseholdContext){const s=await createSupabaseServerClient();if(!s)return[];const{data}=await s.from("household_passwords").select("id,site_app,username,password_value,notes").eq("household_id",c.householdId).order("site_app");return data??[]}
+export async function getVacations(c:CurrentHouseholdContext){const s=await createSupabaseServerClient();if(!s)return[];const{data}=await s.from("vacations").select("id,name,starts_on,ends_on,locations,itinerary,hotels,flights,confirmation_numbers,notes").eq("household_id",c.householdId).order("starts_on");return data??[]}
