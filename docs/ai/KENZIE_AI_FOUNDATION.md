@@ -10,13 +10,15 @@ Calendar, chore, shopping, and meal providers now load compact, permission-filte
 
 Private Notes from Kenzie, one-time reminders, and internal notifications have recipient-scoped persistence and RLS. Personal Headquarters displays only the authenticated member's notes and reminders; notes support mark-one, mark-all, and archive behavior. The app-wide notification center supports recent items, unread state, mark-one, and mark-all, with a single navigation badge sourced from internal notifications. A note trigger creates one deduplicated notification and synchronizes read/archive state.
 
-Kenzie chat can propose a direct note or one-time reminder after resolving the recipient against active household membership. Another-person writes require a manager or parent and explicit confirmation. Self notes and reminders still use trusted UUID identity and a visible confirmation. External push, email, SMS, autonomous note generation, and durable memory remain disabled.
+Kenzie chat can propose a direct note or one-time reminder after resolving the recipient against active household membership. Another-person writes require a manager or parent and explicit confirmation. Self notes and reminders still use trusted UUID identity and a visible confirmation. External push, email, SMS, and autonomous note generation remain disabled.
+
+Private personal memory is now enabled in the development environment after a first-use disclosure. A deterministic structured extractor accepts only direct, allowlisted, low-sensitivity statements; the server validates every candidate again before persistence. The owner can review, edit, delete, undo a newly saved memory, delete all, pause, resume, or opt out by message or conversation. Temporary memories expire, duplicate observations reinforce one record, and changed statements replace the prior active value. Complete conversation transcripts are never written.
 
 The existing deterministic `lib/kenzie/intelligence.ts` remains unchanged.
 
 ## Runtime flow
 
-Authenticated member → member-ID profile resolver → server-side relevance selection → authorized context providers → prompt assembler → OpenAI Responses API → normalized response.
+Authenticated member → member-ID profile resolver → server-side relevance selection → authorized context and relevant owner memory → prompt assembler → OpenAI Responses API → normalized response.
 
 The single Kenzie route supports general conversation and tightly bounded application actions: add a shopping item, create a calendar event, complete the authenticated member's own chore, save a meal-plan entry, leave a private note, and set a one-time reminder. Calendar, meal, note, and reminder changes use an explicit confirmation round trip. Shopping additions follow the collaborative shopping policy; own-chore completion is scoped to the authenticated member. Unknown action names and browser-supplied identity controls are rejected. Conversations remain in component state and are not stored in Supabase or OpenAI (`store: false`).
 

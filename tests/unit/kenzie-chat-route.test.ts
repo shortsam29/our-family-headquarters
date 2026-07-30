@@ -6,9 +6,19 @@ const mocks = vi.hoisted(() => ({
   generate: vi.fn(),
   immediate: vi.fn(),
   confirmed: vi.fn(),
+  saveMemory: vi.fn(),
+  deleteMemory: vi.fn(),
 }));
 vi.mock("@/lib/auth/context", () => ({ resolveCurrentHouseholdContext: mocks.resolve }));
 vi.mock("@/lib/kenzie/conversation/service", () => ({ generateKenzieReply: mocks.generate }));
+vi.mock("@/lib/kenzie/memory/service", () => ({
+  deleteAllOwnedMemories: vi.fn(),
+  deleteOwnedMemory: mocks.deleteMemory,
+  forgetMatchingMemory: vi.fn(),
+  listActiveMemories: vi.fn().mockResolvedValue([]),
+  saveMemoryCandidate: mocks.saveMemory,
+  setMemorySettings: vi.fn(),
+}));
 vi.mock("@/lib/kenzie/platform/live-actions", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/kenzie/platform/live-actions")>();
   return {
@@ -42,6 +52,12 @@ describe("Kenzie chat route", () => {
     mocks.resolve.mockResolvedValue(context);
     mocks.generate.mockResolvedValue({ ok: true, message: "Hello from Kenzie." });
     mocks.immediate.mockResolvedValue(null);
+    mocks.saveMemory.mockResolvedValue({
+      id: "00000000-0000-4000-8000-000000000099",
+      displayText: "You prefer explanations with examples.",
+      updated: false,
+    });
+    mocks.deleteMemory.mockResolvedValue(true);
   });
 
   it("requires a real authenticated member", async () => {
@@ -81,5 +97,50 @@ describe("Kenzie chat route", () => {
     }));
     expect(response.status).toBe(400);
     expect(mocks.confirmed).not.toHaveBeenCalled();
+  });
+
+  it("saves a validated direct preference and returns an owner-scoped undo notice", async () => {
+    const response = await POST(request({
+      message: "I prefer explanations with examples.",
+      history: [],
+      conversationId: "00000000-0000-4000-8000-000000000030",
+      messageId: "00000000-0000-4000-8000-000000000031",
+    }));
+    expect(response.status).toBe(200);
+    expect(mocks.saveMemory).toHaveBeenCalledWith(
+      context,
+      expect.objectContaining({ category: "preference" }),
+      {
+        conversationId: "00000000-0000-4000-8000-000000000030",
+        messageId: "00000000-0000-4000-8000-000000000031",
+      },
+    );
+    expect(await response.json()).toMatchObject({
+      memoryNotice: {
+        id: "00000000-0000-4000-8000-000000000099",
+        displayText: "You prefer explanations with examples.",
+      },
+    });
+  });
+
+  it("honors per-message opt-out and validates undo through the current owner", async () => {
+    await POST(request({
+      message: "I prefer short answers.",
+      history: [],
+      conversationId: "00000000-0000-4000-8000-000000000030",
+      messageId: "00000000-0000-4000-8000-000000000032",
+      preventMemory: true,
+    }));
+    expect(mocks.saveMemory).not.toHaveBeenCalled();
+
+    resetKenzieChatRateLimitForTests();
+    const undoId = "00000000-0000-4000-8000-000000000099";
+    const undo = await POST(request({
+      message: "Undo that memory",
+      history: [],
+      undoMemoryId: undoId,
+    }));
+    expect(undo.status).toBe(200);
+    expect(mocks.deleteMemory).toHaveBeenCalledWith(context, undoId);
   });
 });

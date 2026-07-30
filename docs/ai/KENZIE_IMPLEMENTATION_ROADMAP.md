@@ -5,9 +5,9 @@
 - Phase 3: Household-managed profile configuration and privacy review — complete.
 - Phase 4: Shared platform and first end-to-end activation — live calendar, chore, shopping, and meal context; validated actions; personalized notes; in-app notifications; and one-time reminders.
 - Phase 5: Broader action coverage, richer relevance classification, idempotency, and audit records.
-- Phase 6: Controlled conversation history and explicitly approved memory.
+- Phase 6: Private, automatic personal memory with first-use disclosure and owner controls — implemented in the development environment.
 - Phase 7: Additional provider adapters and proactive notification suggestions.
 - Phase 8: Proactive suggestions and approved pattern learning.
 - Phase 9: Evaluation, privacy review, durable rate limiting, abuse safeguards, and production readiness.
 
-Current boundary: conversation content is not persisted and durable memory remains disabled. Future action expansion must keep UUID identity, server-side provider selection, household authorization, confirmation for consequential changes, and fail-closed behavior.
+Current boundary: complete conversations are not persisted. Kenzie may save only validated, allowlisted, low-sensitivity personal facts after the member acknowledges the first-use notice. Memories are owner-scoped by household and family-member UUID, can be paused, edited, or deleted, and are supplied to conversation assembly as untrusted data. Hidden behavioral tracking, embeddings, health/school-detail storage, and cross-member memory access remain prohibited.
