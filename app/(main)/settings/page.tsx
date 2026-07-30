@@ -3,6 +3,7 @@ import { Card } from "@/components/design-system";
 import { FeaturePage, FeaturePageHeader, FeatureSection, ResponsiveGrid, SummaryCard } from "@/components/features/FeaturePage";
 import { FamilyMemberManager } from "@/components/family/FamilyMemberManager";
 import { KenzieProfileManager } from "@/components/kenzie/KenzieProfileManager";
+import { PersonalMemoryManager } from "@/components/kenzie/PersonalMemoryManager";
 import { saveKenziePreferences } from "@/app/actions/kenzie";
 import { updateHouseholdPreferences } from "@/app/actions/settings";
 import { updateWeatherLocation } from "@/app/actions/weather";
@@ -11,6 +12,7 @@ import { getHouseholdInvitations, getManagedHouseholdMembers } from "@/lib/data/
 import { getHouseholdMemberAccountEmails } from "@/lib/data/account-assistance";
 import { getKenzieDashboard } from "@/lib/data/kenzie-dashboard";
 import { getManagedKenzieAssociations } from "@/lib/kenzie/profiles/association";
+import { getMemorySettings, listActiveMemories } from "@/lib/kenzie/memory/service";
 import { getHouseholdWeatherLocation } from "@/lib/weather/service";
 import styles from "./settings.module.css";
 
@@ -32,13 +34,15 @@ export default async function SettingsPage({
   const feedback = await searchParams;
   const canManage = ["household_manager", "parent"].includes(context.role);
   const canManageWeather = context.role === "household_manager";
-  const [members, invitations, kenzie, weatherLocation, memberAccounts, associations] = await Promise.all([
+  const [members, invitations, kenzie, weatherLocation, memberAccounts, associations, memorySettings, personalMemories] = await Promise.all([
     getManagedHouseholdMembers(context),
     getHouseholdInvitations(context),
     getKenzieDashboard(context),
     getHouseholdWeatherLocation(context),
     getHouseholdMemberAccountEmails(context),
     getManagedKenzieAssociations(context),
+    getMemorySettings(context),
+    listActiveMemories(context),
   ]);
   const accountEmails = Object.fromEntries(memberAccounts.map((account) => [account.memberId, account.email]));
 
@@ -147,9 +151,14 @@ export default async function SettingsPage({
         </div>
       ) : null}
 
+      <div id="kenzie-memory"><FeatureSection title="What Kenzie Remembers" description="Your private, personal memory controls. Other family members and household managers cannot open this list.">
+        <PersonalMemoryManager settings={memorySettings} memories={personalMemories} />
+      </FeatureSection></div>
+
       <div id="kenzie-privacy"><FeatureSection title="Kenzie privacy">
         <Card>
-          <p>Kenzie conversations are not stored as durable memory. Personal memory controls remain off until private ownership, consent, and deletion are fully available.</p>
+          <p>Kenzie may save concise, useful personal preferences after you acknowledge the first-use notice. Full conversations are not stored, and sensitive information is rejected.</p>
+          <p>Each family member&apos;s memories are private to their authenticated account. Household managers do not receive blanket access.</p>
           <p><Link href="/notifications">Open in-app notification preferences and updates →</Link></p>
         </Card>
       </FeatureSection></div>

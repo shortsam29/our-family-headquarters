@@ -1,19 +1,28 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import styles from "./KenzieDevelopmentChat.module.css";
 
-type ChatMessage = { role: "user" | "assistant"; content: string; tone?: "success" | "error" };
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  tone?: "success" | "error";
+  memoryNotice?: { id: string; displayText: string };
+};
 type Proposal =
   | { kind: "create_calendar_event"; title: string; date: string; time: string }
   | { kind: "save_meal"; name: string; mealType: "breakfast" | "lunch" | "dinner" | "snack"; date: string }
   | { kind: "create_note"; recipientSearch: string; recipientLabel: string; title: string; message: string }
-  | { kind: "create_reminder"; recipientSearch: string; recipientLabel: string; message: string; date: string; time: string; recurrence?: "daily" | "weekly" | "monthly" | "yearly" };
+  | { kind: "create_reminder"; recipientSearch: string; recipientLabel: string; message: string; date: string; time: string; recurrence?: "daily" | "weekly" | "monthly" | "yearly" }
+  | { kind: "delete_all_memories" };
 type ChatResponse = {
   ok: boolean;
   message: string;
   status?: "proposal" | "clarification" | "completed";
   proposal?: Proposal;
+  conversationMemoryPaused?: boolean;
+  memoryNotice?: { id: string; displayText: string };
 };
 
 const suggestions = [
@@ -24,6 +33,9 @@ const suggestions = [
 ];
 
 function ProposalDetails({ proposal }: { proposal: Proposal }) {
+  if (proposal.kind === "delete_all_memories") {
+    return <dl><div><dt>Action</dt><dd>Delete all personal memories</dd></div><div><dt>Effect</dt><dd>All active memories will be removed. Automatic memory will remain on unless you pause it separately.</dd></div></dl>;
+  }
   if (proposal.kind === "create_calendar_event") {
     return <dl><div><dt>Action</dt><dd>Create calendar event</dd></div><div><dt>Title</dt><dd>{proposal.title}</dd></div><div><dt>Date</dt><dd>{proposal.date}</dd></div><div><dt>Time</dt><dd>{proposal.time}</dd></div></dl>;
   }
@@ -37,6 +49,7 @@ function ProposalDetails({ proposal }: { proposal: Proposal }) {
 }
 
 function proposalDraft(proposal: Proposal) {
+  if (proposal.kind === "delete_all_memories") return "Forget everything about me";
   if (proposal.kind === "create_calendar_event") return `Schedule ${proposal.title} on ${proposal.date} at ${proposal.time}`;
   if (proposal.kind === "save_meal") return `Plan ${proposal.mealType} ${proposal.name} for ${proposal.date}`;
   if (proposal.kind === "create_note") return `Leave ${proposal.recipientLabel} a note saying ${proposal.message}`;
@@ -47,13 +60,16 @@ function proposalDraft(proposal: Proposal) {
   return `Remind ${proposal.recipientLabel} ${proposal.date} at ${proposal.time} to ${proposal.message}`;
 }
 
-export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {
+export function KenzieDevelopmentChat({ memberName, memoryEnabled = false }: { memberName: string; memoryEnabled?: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingProposal, setPendingProposal] = useState<Proposal | null>(null);
   const [lastRequest, setLastRequest] = useState<Record<string, unknown> | null>(null);
+  const [preventMemory, setPreventMemory] = useState(false);
+  const [conversationMemoryDisabled, setConversationMemoryDisabled] = useState(false);
+  const conversationId = useRef<string>(crypto.randomUUID());
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,8 +96,10 @@ export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {
         role: "assistant",
         content: result.message,
         tone: result.status === "completed" ? "success" : undefined,
+        memoryNotice: result.memoryNotice,
       }]);
       setPendingProposal(result.status === "proposal" && result.proposal ? result.proposal : null);
+      if (result.conversationMemoryPaused) setConversationMemoryDisabled(true);
       setLastRequest(null);
     } catch {
       setError("Kenzie could not answer right now. Your message was not saved.");
@@ -97,7 +115,15 @@ export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {
     setMessages((current) => [...current, { role: "user", content: value }]);
     setDraft("");
     setPendingProposal(null);
-    await post({ message: value, history });
+    await post({
+      message: value,
+      history,
+      conversationId: conversationId.current,
+      messageId: crypto.randomUUID(),
+      preventMemory,
+      conversationMemoryDisabled,
+    });
+    setPreventMemory(false);
   }
 
   async function send(event: FormEvent<HTMLFormElement>) {
@@ -119,7 +145,17 @@ export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {
     await post({
       message: "Confirm the proposed household action.",
       history: messages.slice(-12).map(({ role, content }) => ({ role, content })),
-      confirmedAction: proposal,
+      ...(proposal.kind === "delete_all_memories"
+        ? { confirmedMemoryAction: proposal }
+        : { confirmedAction: proposal }),
+    });
+  }
+
+  async function undoMemory(id: string) {
+    await post({
+      message: "Undo that saved memory.",
+      history: messages.slice(-12).map(({ role, content }) => ({ role, content })),
+      undoMemoryId: id,
     });
   }
 
@@ -127,7 +163,8 @@ export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {
     <div className={styles.chat}>
       <div className={styles.welcome}>
         <strong>Hi {memberName}! What can I help with?</strong>
-        <p>I can help with your household, homework, writing, ideas, explanations, and everyday questions. This conversation is not saved as memory.</p>
+        <p>I can help with your household, homework, writing, ideas, explanations, and everyday questions. Full conversations are never stored.</p>
+        <p className={styles.memoryStatus}>Automatic memory: <strong>{memoryEnabled && !conversationMemoryDisabled ? "On" : "Paused"}</strong> · <Link href="/settings#kenzie-memory">View and control memories</Link></p>
       </div>
       {!messages.length ? (
         <div className={styles.suggestions} aria-label="Suggested questions">
@@ -144,6 +181,15 @@ export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {
           >
             <strong>{item.role === "assistant" ? "Kenzie" : memberName}</strong>
             <p>{item.content}</p>
+            {item.memoryNotice ? (
+              <div className={styles.memoryNotice}>
+                <span>Remembered: {item.memoryNotice.displayText}</span>
+                <button type="button" onClick={() => undoMemory(item.memoryNotice!.id)} disabled={sending}>
+                  Undo
+                </button>
+                <Link href="/settings#kenzie-memory">Review</Link>
+              </div>
+            ) : null}
           </div>
         )) : <p className={styles.empty}>Choose an idea above or ask anything in your own words.</p>}
         {sending ? <p className={styles.thinking} role="status">Kenzie is thinking…</p> : null}
@@ -181,13 +227,19 @@ export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {
           placeholder="Ask a question or request household help…"
         />
         <p className={styles.hint}>Press Enter to send. Use Shift+Enter for a new line.</p>
+        {memoryEnabled && !conversationMemoryDisabled ? (
+          <label className={styles.memoryOptOut}>
+            <input type="checkbox" checked={preventMemory} onChange={(event) => setPreventMemory(event.target.checked)} />
+            Don&apos;t remember this message
+          </label>
+        ) : null}
         <div className={styles.actions}>
           <button type="submit" className="button button--primary" disabled={sending || !draft.trim()}>
             {sending ? "Sending…" : "Send message"}
           </button>
           <button
             type="button"
-            onClick={() => { setMessages([]); setDraft(""); setError(null); setPendingProposal(null); setLastRequest(null); }}
+            onClick={() => { setMessages([]); setDraft(""); setError(null); setPendingProposal(null); setLastRequest(null); setPreventMemory(false); setConversationMemoryDisabled(false); conversationId.current = crypto.randomUUID(); }}
             disabled={sending || (!messages.length && !draft)}
           >
             Start over
