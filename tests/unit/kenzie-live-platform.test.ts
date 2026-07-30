@@ -90,6 +90,19 @@ describe("Kenzie live action boundary", () => {
       date: "2030-01-11",
       time: "16:00",
     });
+    expect(detectKenzieAction("Remind me every day at 7 am to pack my school bag.", now)).toEqual({
+      kind: "create_reminder_request",
+      recipientSearch: "me",
+      message: "pack my school bag",
+      date: "2030-01-07",
+      time: "07:00",
+      recurrence: "daily",
+    });
+  });
+
+  it("routes chore-changing requests to the protected boundary", () => {
+    expect(detectKenzieAction("Skip my trash chore today")).toEqual({ kind: "blocked_chore_change" });
+    expect(detectKenzieAction("Reassign this chore to someone else")).toEqual({ kind: "blocked_chore_change" });
   });
 
   it("requires confirmation-compatible structured calendar and meal proposals", () => {

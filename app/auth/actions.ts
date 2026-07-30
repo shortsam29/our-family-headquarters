@@ -79,7 +79,7 @@ export async function registerInvitedFamilyMember(formData: FormData) {
   }
   const { error: joinError } = await supabase.rpc("redeem_household_invitation", { invitation_code: registration.data.invitationCode });
   if (joinError) redirect("/join-household?error=invitation");
-  redirect("/");
+  redirect("/settings?setup=member");
 }
 
 export async function joinExistingAccount(formData: FormData) {
@@ -91,7 +91,7 @@ export async function joinExistingAccount(formData: FormData) {
   if (!auth.user) redirect("/sign-in?next=/join-household");
   const { error } = await supabase.rpc("redeem_household_invitation", { invitation_code: parsed.data });
   if (error) redirect("/join-household?error=invitation");
-  redirect("/");
+  redirect("/settings?setup=member");
 }
 export async function signOut() {
   const supabase = await createSupabaseServerClient();

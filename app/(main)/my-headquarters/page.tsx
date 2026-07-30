@@ -55,7 +55,7 @@ export default async function MyHeadquartersPage({ searchParams }: { searchParam
       </FeatureSection>
 
       <FeatureSection title="Personal reminders" description="One-time reminders addressed to your signed-in family account.">
-        {reminders.length ? <ResponsiveGrid columns={2}>{reminders.map((reminder) => <div key={reminder.id}><SummaryCard title={reminder.message} detail={new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(reminder.dueAt))} variant="neutral" /><form action={completeReminder}><input type="hidden" name="reminderId" value={reminder.id}/><button type="submit">Mark complete</button></form></div>)}</ResponsiveGrid> : <p>Nothing to remember right now. Ask Kenzie to set a one-time reminder.</p>}
+        {reminders.length ? <ResponsiveGrid columns={2}>{reminders.map((reminder) => <div key={reminder.id}><SummaryCard title={reminder.message} detail={`${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(reminder.dueAt))}${reminder.recurrence ? ` · Repeats ${reminder.recurrence}` : ""}`} variant="neutral" /><form action={completeReminder}><input type="hidden" name="reminderId" value={reminder.id}/><button type="submit">{reminder.recurrence ? "Complete this reminder" : "Mark complete"}</button></form></div>)}</ResponsiveGrid> : <p>Nothing to remember right now. Ask Kenzie to set a reminder.</p>}
       </FeatureSection>
 
       <FeatureSection title="Notes from Kenzie" description="Private notes addressed only to your signed-in family profile.">

@@ -56,6 +56,7 @@ export type ReminderSummary = {
   dueAt: string;
   status: "pending" | "completed" | "cancelled";
   destination?: string;
+  recurrence?: "daily" | "weekly" | "monthly" | "yearly";
 };
 
 export async function getMyReminders(context: CurrentHouseholdContext): Promise<ReminderSummary[]> {
@@ -63,7 +64,7 @@ export async function getMyReminders(context: CurrentHouseholdContext): Promise<
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
   const { data, error } = await supabase.from("household_reminders")
-    .select("id,message,due_at,status,related_destination")
+    .select("id,message,due_at,status,related_destination,recurrence")
     .eq("household_id", context.householdId)
     .eq("recipient_member_id", context.familyMemberId)
     .eq("status", "pending")
@@ -76,5 +77,6 @@ export async function getMyReminders(context: CurrentHouseholdContext): Promise<
     dueAt: item.due_at,
     status: item.status,
     destination: item.related_destination ?? undefined,
+    recurrence: item.recurrence ?? undefined,
   }));
 }

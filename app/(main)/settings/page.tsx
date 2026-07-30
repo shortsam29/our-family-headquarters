@@ -26,7 +26,7 @@ const weatherErrors: Record<string, string> = {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ weatherStatus?: string; weatherError?: string }>;
+  searchParams: Promise<{ weatherStatus?: string; weatherError?: string; setup?: string }>;
 }) {
   const context = await requireCurrentHouseholdContext();
   const feedback = await searchParams;
@@ -45,6 +45,26 @@ export default async function SettingsPage({
   return (
     <FeaturePage>
       <FeaturePageHeader eyebrow="Administration" title="Settings" description="Household access, preferences, personalization, help, and account controls." />
+      {feedback.setup ? (
+        <FeatureSection title={canManage ? "Finish setting up your family home" : "Welcome to your family home"} description="A short checklist will help make the app personal, useful, and ready for everyday life.">
+          <ol className={styles.setupSteps}>
+            {canManage ? <>
+              <li><strong>Confirm the household details</strong><span>Review the family name and time zone.</span><Link href="/settings#household-settings">Review household settings →</Link></li>
+              <li><strong>Add or invite family members</strong><span>Create their family membership and choose the correct household role.</span><Link href="/settings#member-management">Manage family members →</Link></li>
+              <li><strong>Assign Kenzie personalization</strong><span>After a member joins, connect their trusted membership to the correct typed Kenzie profile.</span><Link href="/settings#kenzie-profile-assignment">Assign Kenzie profiles →</Link></li>
+              <li><strong>Choose shared preferences</strong><span>Set weather and family planning preferences without entering a precise home address.</span><Link href="/settings#weather-location">Choose shared preferences →</Link></li>
+              <li><strong>Plan the first family item</strong><span>Use Quick Add from any signed-in page or open the calendar directly.</span><Link href="/schedule">Open the calendar →</Link></li>
+            </> : <>
+              <li><strong>Confirm your family connection</strong><span>Your account is connected through your authenticated household membership.</span><Link href="/settings#household-settings">View household details →</Link></li>
+              <li><strong>Open your personal headquarters</strong><span>See only the schedule, responsibilities, reminders, and private Kenzie notes intended for you.</span><Link href="/my-headquarters">Open My Headquarters →</Link></li>
+              <li><strong>Meet Kenzie</strong><span>Ask a general question or request household help within your permissions.</span><Link href="/kenzie">Talk with Kenzie →</Link></li>
+              <li><strong>Check your notifications</strong><span>Your private reminders and Kenzie notes appear here.</span><Link href="/notifications">Open notifications →</Link></li>
+              <li><strong>Review Kenzie privacy</strong><span>Learn what Kenzie can access and what remains intentionally unavailable.</span><Link href="/settings#kenzie-privacy">Review privacy →</Link></li>
+            </>}
+          </ol>
+        </FeatureSection>
+      ) : null}
+      <div id="household-settings">
       <FeatureSection title="Household settings">
         <ResponsiveGrid columns={3}>
           <SummaryCard title="Household" detail={context.householdName} />
@@ -67,6 +87,7 @@ export default async function SettingsPage({
           </Card>
         ) : null}
       </FeatureSection>
+      </div>
 
       <FeatureSection title="Household weather location" description="Weather uses a city-level location. A precise home address is never requested or stored.">
         <div id="weather-location">
@@ -98,9 +119,11 @@ export default async function SettingsPage({
       </FeatureSection>
 
       {canManage ? (
+        <div id="member-management">
         <FeatureSection title="Manage members, roles, join codes, and invitations">
           <FamilyMemberManager members={members} currentMemberId={context.familyMemberId} invitations={invitations} accountEmails={accountEmails} />
         </FeatureSection>
+        </div>
       ) : null}
 
       {canManage ? (
@@ -117,17 +140,19 @@ export default async function SettingsPage({
       ) : null}
 
       {canManage ? (
+        <div id="kenzie-profile-assignment">
         <FeatureSection title="Kenzie profile assignments" description="Assign approved personalization only after a family member has joined and signed in.">
           <Card><KenzieProfileManager members={members} associations={associations} /></Card>
         </FeatureSection>
+        </div>
       ) : null}
 
-      <FeatureSection title="Kenzie privacy">
+      <div id="kenzie-privacy"><FeatureSection title="Kenzie privacy">
         <Card>
           <p>Kenzie conversations are not stored as durable memory. Personal memory controls remain off until private ownership, consent, and deletion are fully available.</p>
           <p><Link href="/notifications">Open in-app notification preferences and updates →</Link></p>
         </Card>
-      </FeatureSection>
+      </FeatureSection></div>
       <FeatureSection title="API integrations">
         <Card><p className="type-supporting">Open-Meteo weather is connected without an API key. External calendar, banking, email, and notification providers are not connected.</p></Card>
       </FeatureSection>

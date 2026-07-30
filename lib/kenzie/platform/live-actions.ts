@@ -27,6 +27,7 @@ export const kenzieActionProposalSchema = z.discriminatedUnion("kind", [
     message: z.string().trim().min(1).max(500),
     date: z.iso.date(),
     time: z.string().regex(/^\d{2}:\d{2}$/),
+    recurrence: z.enum(["daily", "weekly", "monthly", "yearly"]).optional(),
   }),
   z.object({
     kind: z.literal("save_meal"),
@@ -47,7 +48,8 @@ type DetectedAction =
   | { kind: "add_shopping_item"; name: string; listType: "grocery" | "household" }
   | { kind: "complete_own_chore"; title: string }
   | { kind: "create_note_request"; recipientSearch: string; message: string }
-  | { kind: "create_reminder_request"; recipientSearch: string; message: string; date: string; time: string }
+  | { kind: "create_reminder_request"; recipientSearch: string; message: string; date: string; time: string; recurrence?: "daily" | "weekly" | "monthly" | "yearly" }
+  | { kind: "blocked_chore_change" }
   | { kind: "clarification"; message: string };
 
 function isoDate(value: Date) {
@@ -90,6 +92,9 @@ function resolveTimePhrase(raw: string) {
 
 export function detectKenzieAction(message: string, now = new Date()): DetectedAction | null {
   const text = message.trim().replace(/[.!?]+$/, "");
+  if (/\b(skip|pause|reassign|reschedule|remove)\b.*\b(chore|task)\b|\b(chore|task)\b.*\b(skip|pause|reassign|reschedule|remove)\b/i.test(text)) {
+    return { kind: "blocked_chore_change" };
+  }
   const note = text.match(/^leave\s+(.+?)\s+a\s+note\s+(?:that|saying)\s+(.+)$/i)
     ?? text.match(/^tell\s+(.+?)\s+(.+)$/i);
   if (note) return { kind: "create_note_request", recipientSearch: note[1].trim(), message: note[2].trim() };
@@ -103,6 +108,14 @@ export function detectKenzieAction(message: string, now = new Date()): DetectedA
     const reminderMessage = firstPattern ? reminder[4] : reminder[2];
     if (date && time) {
       return { kind: "create_reminder_request", recipientSearch: reminder[1].trim(), message: reminderMessage.trim(), date, time };
+    }
+  }
+  const recurringReminder = text.match(/^remind\s+(.+?)\s+every\s+(day|week|month|year)(?:\s+at\s+(morning|afternoon|evening|noon|\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?\s+to\s+(.+)$/i);
+  if (recurringReminder) {
+    const time = resolveTimePhrase(recurringReminder[3] ?? "morning");
+    if (time) {
+      const recurrence = ({ day: "daily", week: "weekly", month: "monthly", year: "yearly" } as const)[recurringReminder[2].toLowerCase() as "day" | "week" | "month" | "year"];
+      return { kind: "create_reminder_request", recipientSearch: recurringReminder[1].trim(), message: recurringReminder[4].trim(), date: isoDate(now), time, recurrence };
     }
   }
   const shoppingPatterns = [
@@ -254,6 +267,7 @@ export async function executeKenzieProposal(context: CurrentHouseholdContext, ra
       related_destination: "/my-headquarters",
       created_by_member_id: context.familyMemberId,
       dedupe_key: dedupeKey,
+      recurrence: proposal.data.recurrence ?? null,
     });
     if (error?.code === "23505") {
       return { status: "completed", message: `That reminder is already set for ${recipient.label}.` };
@@ -265,7 +279,12 @@ export async function executeKenzieProposal(context: CurrentHouseholdContext, ra
     revalidatePath("/my-headquarters");
     revalidatePath("/notifications");
     revalidatePath("/", "layout");
-    return { status: "completed", message: `The reminder was set for ${recipient.label} on ${proposal.data.date} at ${proposal.data.time}.` };
+    return {
+      status: "completed",
+      message: proposal.data.recurrence
+        ? `The ${proposal.data.recurrence} reminder was set for ${recipient.label}, starting ${proposal.data.date} at ${proposal.data.time}.`
+        : `The reminder was set for ${recipient.label} on ${proposal.data.date} at ${proposal.data.time}.`,
+    };
   }
   if (proposal.data.kind === "create_calendar_event") {
     const startsAt = householdLocalDateTimeToIso(proposal.data.date, proposal.data.time, context.timeZone);
@@ -307,6 +326,9 @@ export async function executeKenzieProposal(context: CurrentHouseholdContext, ra
 export async function handleImmediateKenzieAction(context: CurrentHouseholdContext, message: string): Promise<KenzieActionResponse | null> {
   const action = detectKenzieAction(message);
   if (!action) return null;
+  if (action.kind === "blocked_chore_change") {
+    return { status: "failed", message: "Assigned chores cannot be skipped, paused, reassigned, or rescheduled here. A parent or household manager can change the chore assignment when needed." };
+  }
   if (action.kind === "clarification") return { status: "clarification", message: action.message };
   if (action.kind === "create_note_request" || action.kind === "create_reminder_request") {
     const recipient = await resolveRecipient(context, action.recipientSearch);
@@ -331,13 +353,16 @@ export async function handleImmediateKenzieAction(context: CurrentHouseholdConte
           message: action.message,
           date: action.date,
           time: action.time,
+          recurrence: action.recurrence,
         };
     return {
       status: "proposal",
       proposal,
       message: action.kind === "create_note_request"
         ? `Leave this note for ${recipient.label}?`
-        : `Set this reminder for ${recipient.label} on ${action.date} at ${action.time}?`,
+        : action.recurrence
+          ? `Set a ${action.recurrence} reminder for ${recipient.label}, starting ${action.date} at ${action.time}?`
+          : `Set this reminder for ${recipient.label} on ${action.date} at ${action.time}?`,
     };
   }
   if (action.kind === "create_calendar_event" || action.kind === "save_meal") {

@@ -5,6 +5,8 @@ export type EventCategory = "household" | "family" | "school" | "work" | "appoin
 
 export type ScheduleEvent = {
   id: string;
+  seriesId?: string;
+  seriesStartDate?: string;
   title: string;
   date: string;
   endDate?: string;
@@ -16,6 +18,8 @@ export type ScheduleEvent = {
   ownerId: FamilyMember["id"];
   participantIds: FamilyMember["id"][];
   location?: string;
+  recurrence?: "daily" | "weekly" | "monthly" | "yearly";
+  reminderMinutes?: number;
   scope: ContentScope;
 };
 

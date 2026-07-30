@@ -8,7 +8,7 @@ type Proposal =
   | { kind: "create_calendar_event"; title: string; date: string; time: string }
   | { kind: "save_meal"; name: string; mealType: "breakfast" | "lunch" | "dinner" | "snack"; date: string }
   | { kind: "create_note"; recipientSearch: string; recipientLabel: string; title: string; message: string }
-  | { kind: "create_reminder"; recipientSearch: string; recipientLabel: string; message: string; date: string; time: string };
+  | { kind: "create_reminder"; recipientSearch: string; recipientLabel: string; message: string; date: string; time: string; recurrence?: "daily" | "weekly" | "monthly" | "yearly" };
 type ChatResponse = {
   ok: boolean;
   message: string;
@@ -33,7 +33,18 @@ function ProposalDetails({ proposal }: { proposal: Proposal }) {
   if (proposal.kind === "create_note") {
     return <dl><div><dt>Action</dt><dd>Leave a private note</dd></div><div><dt>For</dt><dd>{proposal.recipientLabel}</dd></div><div><dt>Message</dt><dd>{proposal.message}</dd></div></dl>;
   }
-  return <dl><div><dt>Action</dt><dd>Set a one-time reminder</dd></div><div><dt>For</dt><dd>{proposal.recipientLabel}</dd></div><div><dt>Reminder</dt><dd>{proposal.message}</dd></div><div><dt>When</dt><dd>{proposal.date} at {proposal.time}</dd></div></dl>;
+  return <dl><div><dt>Action</dt><dd>Set {proposal.recurrence ? `a ${proposal.recurrence}` : "a one-time"} reminder</dd></div><div><dt>For</dt><dd>{proposal.recipientLabel}</dd></div><div><dt>Reminder</dt><dd>{proposal.message}</dd></div><div><dt>{proposal.recurrence ? "Starts" : "When"}</dt><dd>{proposal.date} at {proposal.time}</dd></div>{proposal.recurrence ? <div><dt>Repeats</dt><dd>{proposal.recurrence}</dd></div> : null}</dl>;
+}
+
+function proposalDraft(proposal: Proposal) {
+  if (proposal.kind === "create_calendar_event") return `Schedule ${proposal.title} on ${proposal.date} at ${proposal.time}`;
+  if (proposal.kind === "save_meal") return `Plan ${proposal.mealType} ${proposal.name} for ${proposal.date}`;
+  if (proposal.kind === "create_note") return `Leave ${proposal.recipientLabel} a note saying ${proposal.message}`;
+  if (proposal.recurrence) {
+    const period = { daily: "day", weekly: "week", monthly: "month", yearly: "year" }[proposal.recurrence];
+    return `Remind ${proposal.recipientLabel} every ${period} at ${proposal.time} to ${proposal.message}`;
+  }
+  return `Remind ${proposal.recipientLabel} ${proposal.date} at ${proposal.time} to ${proposal.message}`;
 }
 
 export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {
@@ -140,11 +151,13 @@ export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {
       </div>
       {pendingProposal ? (
         <div className={styles.confirmation} role="group" aria-label="Confirm Kenzie action">
-          <strong>Kenzie understood:</strong>
+          <div className={styles.previewHeading}><span>Action preview</span><strong>Please review before saving</strong></div>
           <ProposalDetails proposal={pendingProposal} />
+          <p className={styles.previewNotice}>Nothing changes until you confirm. Kenzie will use your signed-in household permissions.</p>
           <div className={styles.actions}>
-            <button type="button" className="button button--primary" onClick={confirmProposal} disabled={sending}>Confirm change</button>
-            <button type="button" onClick={() => setPendingProposal(null)} disabled={sending}>Cancel</button>
+            <button type="button" className="button button--primary" onClick={confirmProposal} disabled={sending}>Confirm and save</button>
+            <button type="button" onClick={() => { setDraft(proposalDraft(pendingProposal)); setPendingProposal(null); }} disabled={sending}>Edit request</button>
+            <button type="button" onClick={() => setPendingProposal(null)} disabled={sending}>Don&apos;t save</button>
           </div>
         </div>
       ) : null}

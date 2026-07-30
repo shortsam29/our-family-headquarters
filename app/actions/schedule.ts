@@ -69,7 +69,8 @@ export async function saveScheduleEventState(eventId: string | null, _previous: 
 }
 
 export async function saveScheduleEvent(eventId: string | null, formData: FormData) {
-  const returnTo = formData.get("returnTo") === "/" ? "/" : "/schedule";
+  const requestedReturn = String(formData.get("returnTo") ?? "");
+  const returnTo = /^\/(?:[a-z0-9-]+(?:\/[a-z0-9-]+)*)?$/.test(requestedReturn) ? requestedReturn : "/schedule";
   const result = await persistScheduleEvent(eventId, formData);
   redirect(`${returnTo}?${result.status === "success" ? "status=event-saved" : `error=${encodeURIComponent(result.message ?? "save")}`}`);
 }

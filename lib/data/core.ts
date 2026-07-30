@@ -2,6 +2,7 @@ import { familyMembers, scheduleEvents } from "@/lib/features/mock-data";
 import { todayMockData } from "@/lib/today/mock-data";
 import { createKenzieNote } from "@/lib/kenzie/intelligence";
 import { getDomainSignals } from "@/lib/data/domains";
+import { nextRecurringDate, recurringDates, type CalendarRecurrence } from "@/lib/schedule/recurrence";
 import { toZonedDateIso } from "@/lib/today/date";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { CurrentHouseholdContext } from "@/lib/auth/context";
@@ -24,26 +25,33 @@ function localTimeInTimeZone(value: string, timeZone: string) {
   return `${hour}:${minute}`;
 }
 
+function shiftDate(value: string, days: number) {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return toZonedDateIso(date, "UTC");
+}
+
 export async function getScheduleData(context: CurrentHouseholdContext): Promise<SectionState<ScheduleEvent[]>> {
   if (context.source === "development-fixture") return { status: "populated", data: scheduleEvents };
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { status: "error" };
   const { data, error } = await supabase
     .from("schedule_events")
-    .select("id,title,description,category,location,starts_at,ends_at,all_day_date,is_all_day,created_by_member_id,event_participants(family_member_id)")
+    .select("id,title,description,category,location,starts_at,ends_at,all_day_date,is_all_day,recurrence,reminder_minutes,created_by_member_id,event_participants(family_member_id)")
     .eq("household_id", context.householdId)
     .is("cancelled_at", null)
     .order("starts_at", { ascending: true });
   if (error) return { status: "error", message: error.code };
   if (!data?.length) return { status: "empty" };
-  return {
-    status: "populated",
-    data: data.map((event) => {
+  const baseEvents = data.map((event) => {
       const dateValue = event.is_all_day ? event.all_day_date : event.starts_at;
+      const date = dateValue ? (event.is_all_day ? event.all_day_date! : toZonedDateIso(new Date(event.starts_at!), context.timeZone)) : "";
       return {
         id: event.id,
+        seriesId: event.id,
+        seriesStartDate: date,
         title: event.title,
-        date: dateValue ? (event.is_all_day ? event.all_day_date! : toZonedDateIso(new Date(event.starts_at!), context.timeZone)) : "",
+        date,
         endDate: event.ends_at ? toZonedDateIso(new Date(event.ends_at), context.timeZone) : undefined,
         description: event.description ?? undefined,
         startTime: event.starts_at ? localTimeInTimeZone(event.starts_at, context.timeZone) : undefined,
@@ -53,9 +61,33 @@ export async function getScheduleData(context: CurrentHouseholdContext): Promise
         ownerId: event.created_by_member_id,
         participantIds: (event.event_participants ?? []).map((participant) => participant.family_member_id),
         location: event.location ?? undefined,
+        recurrence: event.recurrence as CalendarRecurrence | undefined,
+        reminderMinutes: event.reminder_minutes ?? undefined,
         scope: "household" as const,
       };
-    }),
+    });
+  const today = localDateInTimeZone(context.timeZone);
+  const fromDate = new Date(`${today}T12:00:00`);
+  const toDate = new Date(`${today}T12:00:00`);
+  fromDate.setFullYear(fromDate.getFullYear() - 1);
+  toDate.setFullYear(toDate.getFullYear() + 2);
+  const from = toZonedDateIso(fromDate, "UTC");
+  const to = toZonedDateIso(toDate, "UTC");
+  const expanded = baseEvents.flatMap((event) => {
+    if (!event.recurrence) return [event];
+    const durationDays = event.endDate
+      ? Math.max(0, Math.round((new Date(`${event.endDate}T12:00:00`).getTime() - new Date(`${event.date}T12:00:00`).getTime()) / 86_400_000))
+      : 0;
+    return recurringDates(event.date, event.recurrence, from, to).map((date) => ({
+      ...event,
+      id: `${event.seriesId}:${date}`,
+      date,
+      endDate: event.endDate ? shiftDate(date, durationDays) : undefined,
+    }));
+  });
+  return {
+    status: "populated",
+    data: expanded,
   };
 }
 
@@ -66,15 +98,20 @@ export async function getCurrentMemberTasks(context: CurrentHouseholdContext): P
   const today = localDateInTimeZone(context.timeZone);
   const { data, error } = await supabase
     .from("task_assignments")
-    .select("id,tasks!inner(title,category,daypart,due_time,due_date,active),task_completions(id,completion_date)")
+    .select("id,tasks!inner(title,category,daypart,due_time,due_date,recurrence,active),task_completions(id,completion_date)")
     .eq("family_member_id", context.familyMemberId)
-    .eq("tasks.active", true)
-    .or(`due_date.is.null,due_date.eq.${today}`, { referencedTable: "tasks" });
+    .eq("tasks.active", true);
   if (error) return { status: "error", message: error.code };
-  if (!data?.length) return { status: "empty" };
+  const current = (data ?? []).filter((assignment) => {
+    const task = assignment.tasks as unknown as { due_date: string | null; recurrence: CalendarRecurrence | null };
+    if (!task.due_date) return true;
+    if (!task.recurrence) return task.due_date === today;
+    return nextRecurringDate(task.due_date, task.recurrence, today) === today;
+  });
+  if (!current.length) return { status: "empty" };
   return {
     status: "populated",
-    data: data.map((assignment) => {
+    data: current.map((assignment) => {
       const task = assignment.tasks as unknown as {
         title: string;
         category: TodayTask["category"];

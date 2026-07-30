@@ -19,4 +19,21 @@ describe("ScheduleView", () => {
     expect(screen.getByText("Doctor's appointment")).toBeInTheDocument();
     expect(screen.getByText("Morning")).toBeInTheDocument();
   });
+
+  it("labels a recurring series and warns about an overlapping event", async () => {
+    const user = userEvent.setup();
+    render(<ScheduleView events={[{
+      ...event,
+      seriesId: event.id,
+      seriesStartDate: event.date,
+      recurrence: "weekly",
+    }]} members={[]} canManage today="2026-07-22" />);
+
+    expect(screen.getByText("Repeats weekly")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "+ Add Event" }));
+    await user.type(screen.getByLabelText("Title"), "School meeting");
+    await user.type(screen.getByLabelText("Start"), "11:30");
+    await user.type(screen.getByLabelText("End"), "12:30");
+    expect(screen.getByRole("status")).toHaveTextContent("overlaps Doctor's appointment");
+  });
 });

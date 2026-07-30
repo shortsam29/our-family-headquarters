@@ -17,6 +17,10 @@
 .actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}
 .confirmation{display:grid;gap:var(--space-3);padding:var(--space-4);border:2px solid rgba(109,130,91,.45);border-radius:var(--radius-large);background:var(--color-surface-soft)}
 .confirmation>strong{color:var(--color-deep-olive);font-size:1.05rem}
+.previewHeading{display:grid;gap:var(--space-1)}
+.previewHeading span{color:var(--color-text-muted);font-size:var(--font-size-caption);font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.previewHeading strong{color:var(--color-deep-olive);font-size:1.05rem}
+.previewNotice{margin:0;padding:var(--space-3);border-radius:var(--radius-small);background:var(--color-sage-light);color:var(--color-text-secondary);font-size:.9rem}
 .confirmation dl{display:grid;gap:.4rem;margin:0}
 .confirmation dl div{display:grid;grid-template-columns:6rem 1fr;gap:var(--space-3)}
 .confirmation dt{font-weight:700}
