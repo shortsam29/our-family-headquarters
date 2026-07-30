@@ -24,9 +24,16 @@ describe("Kenzie live actions", () => {
     const itemInsert = vi.fn().mockResolvedValue({ error: null });
     const listSingle = vi.fn().mockResolvedValue({ data: { id: "list-id" }, error: null });
     const listBuilder = { upsert: vi.fn(() => ({ select: vi.fn(() => ({ single: listSingle })) })) };
-    const itemBuilder = { insert: itemInsert };
+    const existingQuery = {
+      select: vi.fn(() => existingQuery),
+      eq: vi.fn(() => existingQuery),
+      ilike: vi.fn(() => existingQuery),
+      limit: vi.fn(() => existingQuery),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      insert: itemInsert,
+    };
     mocks.createClient.mockResolvedValue({
-      from: vi.fn((table: string) => table === "shopping_lists" ? listBuilder : itemBuilder),
+      from: vi.fn((table: string) => table === "shopping_lists" ? listBuilder : existingQuery),
     });
 
     expect(await handleImmediateKenzieAction(child, "Add milk to the grocery list")).toMatchObject({ status: "completed" });
@@ -53,7 +60,13 @@ describe("Kenzie live actions", () => {
 
   it("creates a confirmed calendar event inside the trusted household", async () => {
     const insert = vi.fn().mockResolvedValue({ error: null });
-    mocks.createClient.mockResolvedValue({ from: vi.fn(() => ({ insert })) });
+    const query = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      insert,
+    };
+    mocks.createClient.mockResolvedValue({ from: vi.fn(() => query) });
     expect(await executeKenzieProposal(manager, {
       kind: "create_calendar_event",
       title: "Practice",
@@ -68,13 +81,11 @@ describe("Kenzie live actions", () => {
   });
 
   it("marks only a matching chore assigned to the authenticated member", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({ data: { id: "assignment-id" }, error: null });
     const query = {
       select: vi.fn(() => query),
       eq: vi.fn(() => query),
       ilike: vi.fn(() => query),
-      limit: vi.fn(() => query),
-      maybeSingle,
+      limit: vi.fn().mockResolvedValue({ data: [{ id: "assignment-id" }], error: null }),
     };
     const completionUpsert = vi.fn().mockResolvedValue({ error: null });
     mocks.createClient.mockResolvedValue({

@@ -1,12 +1,27 @@
 .chat{display:grid;gap:var(--space-5)}
-.messages{display:grid;max-height:32rem;gap:var(--space-3);overflow-y:auto;padding:var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-large);background:var(--color-surface-soft)}
+.welcome{padding:var(--space-4);border:1px solid rgba(109,130,91,.3);border-radius:var(--radius-large);background:var(--color-sage-light)}
+.welcome strong{font-size:1.15rem;color:var(--color-deep-olive)}
+.welcome p{margin:.45rem 0 0}
+.suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}
+.suggestions button{min-height:48px;padding:var(--space-3);text-align:left}
+.messages{display:grid;min-height:12rem;max-height:34rem;gap:var(--space-3);overflow-y:auto;padding:var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-large);background:var(--color-surface-soft);scroll-behavior:smooth}
 .kenzie,.person{max-width:min(90%,42rem);padding:var(--space-3) var(--space-4);border-radius:var(--radius-large)}
 .kenzie{justify-self:start;background:var(--color-sage-light)}
-.person{justify-self:end;background:var(--color-surface)}
+.person{justify-self:end;background:var(--color-surface);border:1px solid var(--color-border)}
+.success{border:1px solid rgba(73,112,55,.45)}
 .kenzie p,.person p,.empty{margin:var(--space-2) 0 0;white-space:pre-wrap}
+.thinking{margin:0;color:var(--color-deep-olive);font-weight:700}
 .form{display:grid;gap:var(--space-3)}
-.form textarea{width:100%}
-.actions,.confirmation{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}
-.confirmation{padding:var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-large);background:var(--color-surface-soft)}
-.confirmation p{flex-basis:100%;margin:0}
-.error{color:var(--color-error)}
+.form textarea{width:100%;resize:vertical}
+.hint{margin:calc(var(--space-2) * -1) 0 0;color:var(--color-text-muted);font-size:.82rem}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-3)}
+.confirmation{display:grid;gap:var(--space-3);padding:var(--space-4);border:2px solid rgba(109,130,91,.45);border-radius:var(--radius-large);background:var(--color-surface-soft)}
+.confirmation>strong{color:var(--color-deep-olive);font-size:1.05rem}
+.confirmation dl{display:grid;gap:.4rem;margin:0}
+.confirmation dl div{display:grid;grid-template-columns:6rem 1fr;gap:var(--space-3)}
+.confirmation dt{font-weight:700}
+.confirmation dd{margin:0}
+.error{padding:var(--space-3);border:1px solid currentColor;border-radius:var(--radius-medium);color:var(--color-error)}
+.error p{margin:0 0 var(--space-2)}
+@media(max-width:620px){.suggestions{grid-template-columns:1fr}.kenzie,.person{max-width:96%}.confirmation dl div{grid-template-columns:1fr;gap:0}.messages{max-height:28rem;padding:var(--space-3)}}
+@media(prefers-reduced-motion:reduce){.messages{scroll-behavior:auto}}

@@ -31,6 +31,41 @@ describe("Kenzie live action boundary", () => {
     expect(detectKenzieAction("Change my role to manager")).toBeNull();
   });
 
+  it.each([
+    ["Put eggs on the grocery list.", "eggs"],
+    ["We need bread.", "bread"],
+    ["Can you add apples?", "apples"],
+  ])("understands natural shopping request: %s", (message, name) => {
+    expect(detectKenzieAction(message)).toMatchObject({ kind: "add_shopping_item", name });
+  });
+
+  it("understands relative calendar, meal, and chore requests", () => {
+    const now = new Date("2030-01-07T12:00:00");
+    expect(detectKenzieAction("Schedule soccer practice Tuesday at 5 pm.", now)).toEqual({
+      kind: "create_calendar_event",
+      title: "soccer practice",
+      date: "2030-01-08",
+      time: "17:00",
+    });
+    expect(detectKenzieAction("Plan spaghetti for Friday.", now)).toEqual({
+      kind: "save_meal",
+      mealType: "dinner",
+      name: "spaghetti",
+      date: "2030-01-11",
+    });
+    expect(detectKenzieAction("I finished taking out the trash.")).toEqual({
+      kind: "complete_own_chore",
+      title: "taking out the trash",
+    });
+  });
+
+  it("asks for one missing calendar detail instead of guessing", () => {
+    expect(detectKenzieAction("Add dentist appointment Friday.")).toEqual({
+      kind: "clarification",
+      message: "What time should I use for that calendar event?",
+    });
+  });
+
   it("requires confirmation-compatible structured calendar and meal proposals", () => {
     expect(kenzieActionProposalSchema.safeParse({
       kind: "create_calendar_event",
