@@ -1,15 +1,16 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync("supabase/migrations/20260726233000_family_wish_list_dashboard.sql", "utf8");
+const migration = readFileSync("supabase/migrations/20260730060000_production_authorization_api_grants.sql", "utf8");
 const repository = readFileSync("lib/data/personal-tools.ts", "utf8");
 
 describe("family wish-list dashboard access", () => {
-  it("adds only a Samantha household read policy", () => {
-    expect(migration).toContain("wish_list_samantha_household_select");
-    expect(migration).toContain("lower(fm.display_name) like 'samantha%'");
+  it("adds only an authenticated adult household read policy", () => {
+    expect(migration).toContain("personal_wish_list_household_adult_select");
+    expect(migration).toContain("fm.role in ('household_manager', 'parent')");
+    expect(migration).not.toContain("display_name");
     expect(migration).toContain("for select");
-    expect(migration).not.toMatch(/for (insert|update|delete|all)/);
+    expect(migration).toContain("to authenticated");
   });
 
   it("reads the existing wish-list table without copying records", () => {

@@ -12,7 +12,7 @@ import { requireCurrentHouseholdContext } from "@/lib/auth/context";
 import { getCurrentMemberTasks, getKenzieGuidance, getScheduleData } from "@/lib/data/core";
 import { getDomainSignals } from "@/lib/data/domains";
 import { getPrivatePersonalTools } from "@/lib/data/personal-tools";
-import { getPersonalizedPlannerItems, isJason } from "@/lib/data/personalized-planner";
+import { canUsePersonalizedPlanner, getPersonalizedPlannerItems } from "@/lib/data/personalized-planner";
 import { toZonedDateIso } from "@/lib/today/date";
 import { getMyKenzieNotes } from "@/lib/kenzie/notes/service";
 import { PersonalKenzieNotes } from "@/components/kenzie/PersonalKenzieNotes";
@@ -21,8 +21,8 @@ import { getMyReminders } from "@/lib/kenzie/notifications/service";
 export default async function MyHeadquartersPage({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const context = await requireCurrentHouseholdContext();
   const feedback = await searchParams;
-  const jason = isJason(context.displayName);
-  const [schedule, tasks, signals, personalTools, jasonItems, kenzieNotes, reminders] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), getPrivatePersonalTools(context), jason ? getPersonalizedPlannerItems(context, ["training", "fight"]) : Promise.resolve([]), getMyKenzieNotes(context), getMyReminders(context)]);
+  const canUsePlanner = canUsePersonalizedPlanner(context.role);
+  const [schedule, tasks, signals, personalTools, plannerItems, kenzieNotes, reminders] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), getPrivatePersonalTools(context), canUsePlanner ? getPersonalizedPlannerItems(context, ["training", "fight"]) : Promise.resolve([]), getMyKenzieNotes(context), getMyReminders(context)]);
   const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
   const today = toZonedDateIso(new Date(), context.timeZone);
 
@@ -72,7 +72,7 @@ export default async function MyHeadquartersPage({ searchParams }: { searchParam
         <PersonalWishList items={personalTools.wishItems} />
       </FeatureSection>
 
-      {jason ? <><FeatureSection title="Upcoming Training" description="Keep firefighter training responsibilities and dates together."><PlannerCollection type="training" items={jasonItems.filter((item) => item.type === "training")} /></FeatureSection><FeatureSection title="Upcoming Fights" description="Keep buhurt events, travel dates, and locations together."><PlannerCollection type="fight" items={jasonItems.filter((item) => item.type === "fight")} /></FeatureSection></> : null}
+      {canUsePlanner ? <><FeatureSection title="Upcoming Training" description="Keep firefighter training responsibilities and dates together."><PlannerCollection type="training" items={plannerItems.filter((item) => item.type === "training")} /></FeatureSection><FeatureSection title="Upcoming Fights" description="Keep buhurt events, travel dates, and locations together."><PlannerCollection type="fight" items={plannerItems.filter((item) => item.type === "fight")} /></FeatureSection></> : null}
 
       <FeatureSection title="A little encouragement">
         <TodaySectionState state={kenzie} emptyTitle="A quiet moment" emptyMessage="Kenzie doesn’t have a note right now." loadingLabel="Kenzie’s note is on its way" errorMessage="Kenzie’s note is unavailable. Your day still works normally.">
