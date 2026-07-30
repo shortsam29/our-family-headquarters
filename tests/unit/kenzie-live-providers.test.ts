@@ -53,6 +53,37 @@ describe("Kenzie live context providers", () => {
     expect(builder.eq).toHaveBeenCalledWith("family_member_id", context.familyMemberId);
   });
 
+  it("returns calendar times in the trusted household time zone instead of raw UTC", async () => {
+    const builder = query({
+      data: [{
+        title: "Appointment",
+        starts_at: "2030-01-11T14:00:00.000Z",
+        ends_at: "2030-01-11T15:00:00.000Z",
+        all_day_date: null,
+        is_all_day: false,
+        location: null,
+      }],
+      error: null,
+    });
+    mocks.createClient.mockResolvedValue({ from: vi.fn(() => builder) });
+
+    expect(await calendarProvider.load(context)).toEqual({
+      status: "available",
+      data: {
+        upcoming: [{
+          title: "Appointment",
+          date: "2030-01-11",
+          startTime: "09:00",
+          endDate: "2030-01-11",
+          endTime: "10:00",
+          timeZone: "America/New_York",
+          isAllDay: false,
+          location: null,
+        }],
+      },
+    });
+  });
+
   it("isolates provider failures so general conversation can continue", async () => {
     const builder = query({ data: null, error: { message: "offline" } });
     mocks.createClient.mockResolvedValue({ from: vi.fn(() => builder) });

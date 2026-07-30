@@ -2,6 +2,7 @@ import type { CurrentHouseholdContext } from "@/lib/auth/context";
 import { resolveAuthenticatedMemberProfile } from "@/lib/kenzie/profiles/association";
 import type { KenzieContextProvider } from "@/lib/kenzie/platform/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { toZonedDateIso } from "@/lib/today/date";
 
 export const householdProvider: KenzieContextProvider = {
   id: "household",
@@ -46,6 +47,15 @@ function dateRange(days = 7) {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
+function localTime(value: string, timeZone: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(value));
+}
+
 export const calendarProvider: KenzieContextProvider = {
   id: "calendar",
   async load(context) {
@@ -63,7 +73,24 @@ export const calendarProvider: KenzieContextProvider = {
       .order("starts_at", { ascending: true })
       .limit(20);
     if (error) return { status: "unavailable" };
-    return { status: "available", data: { upcoming: data ?? [] } };
+    const upcoming = (data ?? []).map((event) => event.is_all_day
+      ? {
+          title: event.title,
+          date: event.all_day_date,
+          isAllDay: true,
+          location: event.location,
+        }
+      : {
+          title: event.title,
+          date: event.starts_at ? toZonedDateIso(new Date(event.starts_at), context.timeZone) : null,
+          startTime: event.starts_at ? localTime(event.starts_at, context.timeZone) : null,
+          endDate: event.ends_at ? toZonedDateIso(new Date(event.ends_at), context.timeZone) : null,
+          endTime: event.ends_at ? localTime(event.ends_at, context.timeZone) : null,
+          timeZone: context.timeZone,
+          isAllDay: false,
+          location: event.location,
+        });
+    return { status: "available", data: { upcoming } };
   },
 };
 

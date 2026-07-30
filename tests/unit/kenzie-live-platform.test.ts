@@ -61,7 +61,11 @@ describe("Kenzie live action boundary", () => {
     });
     expect(detectKenzieAction("I finished taking out the trash.")).toEqual({
       kind: "complete_own_chore",
-      title: "taking out the trash",
+      title: "take out the trash",
+    });
+    expect(detectKenzieAction("I completed doing the dishes.")).toEqual({
+      kind: "complete_own_chore",
+      title: "do the dishes",
     });
   });
 

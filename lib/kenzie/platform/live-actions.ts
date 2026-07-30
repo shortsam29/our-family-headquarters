@@ -164,7 +164,12 @@ export function detectKenzieAction(message: string, now = new Date()): DetectedA
   ];
   for (const pattern of chorePatterns) {
     const match = text.match(pattern);
-    if (match) return { kind: "complete_own_chore", title: match[1].trim() };
+    if (match) {
+      const title = match[1].trim()
+        .replace(/^taking\b/i, "take")
+        .replace(/^doing\b/i, "do");
+      return { kind: "complete_own_chore", title };
+    }
   }
   return null;
 }
