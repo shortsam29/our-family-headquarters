@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync("supabase/migrations/20260729220000_kenzie_platform_foundation.sql", "utf8");
+const migration = readFileSync("supabase/migrations/20260730010544_kenzie_platform_foundation.sql", "utf8");
 
 describe("Kenzie platform persistence migration", () => {
   it("stores private recipient notes without conversation or personality data", () => {

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const migration = readFileSync("supabase/migrations/20260729210000_kenzie_profile_associations.sql", "utf8");
+const migration = readFileSync("supabase/migrations/20260730010509_kenzie_profile_associations.sql", "utf8");
 
 describe("Kenzie profile association migration", () => {
   it("stores only a constrained stable profile association and audit metadata", () => {
