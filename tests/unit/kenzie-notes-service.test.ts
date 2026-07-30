@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createSupabaseServerClient: mocks.createClient }));
-import { getMyKenzieNotes, getMyUnreadNotificationCount } from "@/lib/kenzie/notes/service";
+import { getMyKenzieNotes } from "@/lib/kenzie/notes/service";
+import { getMyUnreadNotificationCount } from "@/lib/kenzie/notifications/service";
 
 const context = {
   userId: "00000000-0000-4000-8000-000000000001",
@@ -19,7 +20,7 @@ function chain(final: unknown) {
   const builder: Record<string, ReturnType<typeof vi.fn>> = {};
   for (const method of ["select", "eq", "order", "limit", "is"]) builder[method] = vi.fn(() => builder);
   builder.limit = vi.fn().mockResolvedValue(final);
-  builder.is = vi.fn().mockResolvedValue(final);
+  builder.is = vi.fn(() => builder);
   return builder;
 }
 
@@ -44,6 +45,7 @@ describe("Kenzie notes service", () => {
 
   it("counts only the authenticated member's unread notes and fails closed", async () => {
     const query = chain({ count: 2, error: null });
+    query.is.mockResolvedValue({ count: 2, error: null });
     mocks.createClient.mockResolvedValue({ from: vi.fn(() => query) });
     expect(await getMyUnreadNotificationCount(context)).toBe(2);
     expect(query.eq).toHaveBeenCalledWith("recipient_member_id", context.familyMemberId);

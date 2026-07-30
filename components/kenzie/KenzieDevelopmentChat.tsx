@@ -6,7 +6,9 @@ import styles from "./KenzieDevelopmentChat.module.css";
 type ChatMessage = { role: "user" | "assistant"; content: string; tone?: "success" | "error" };
 type Proposal =
   | { kind: "create_calendar_event"; title: string; date: string; time: string }
-  | { kind: "save_meal"; name: string; mealType: "breakfast" | "lunch" | "dinner" | "snack"; date: string };
+  | { kind: "save_meal"; name: string; mealType: "breakfast" | "lunch" | "dinner" | "snack"; date: string }
+  | { kind: "create_note"; recipientSearch: string; recipientLabel: string; title: string; message: string }
+  | { kind: "create_reminder"; recipientSearch: string; recipientLabel: string; message: string; date: string; time: string };
 type ChatResponse = {
   ok: boolean;
   message: string;
@@ -25,7 +27,13 @@ function ProposalDetails({ proposal }: { proposal: Proposal }) {
   if (proposal.kind === "create_calendar_event") {
     return <dl><div><dt>Action</dt><dd>Create calendar event</dd></div><div><dt>Title</dt><dd>{proposal.title}</dd></div><div><dt>Date</dt><dd>{proposal.date}</dd></div><div><dt>Time</dt><dd>{proposal.time}</dd></div></dl>;
   }
-  return <dl><div><dt>Action</dt><dd>Update meal plan</dd></div><div><dt>Meal</dt><dd>{proposal.name}</dd></div><div><dt>Day</dt><dd>{proposal.date}</dd></div><div><dt>Type</dt><dd>{proposal.mealType}</dd></div></dl>;
+  if (proposal.kind === "save_meal") {
+    return <dl><div><dt>Action</dt><dd>Update meal plan</dd></div><div><dt>Meal</dt><dd>{proposal.name}</dd></div><div><dt>Day</dt><dd>{proposal.date}</dd></div><div><dt>Type</dt><dd>{proposal.mealType}</dd></div></dl>;
+  }
+  if (proposal.kind === "create_note") {
+    return <dl><div><dt>Action</dt><dd>Leave a private note</dd></div><div><dt>For</dt><dd>{proposal.recipientLabel}</dd></div><div><dt>Message</dt><dd>{proposal.message}</dd></div></dl>;
+  }
+  return <dl><div><dt>Action</dt><dd>Set a one-time reminder</dd></div><div><dt>For</dt><dd>{proposal.recipientLabel}</dd></div><div><dt>Reminder</dt><dd>{proposal.message}</dd></div><div><dt>When</dt><dd>{proposal.date} at {proposal.time}</dd></div></dl>;
 }
 
 export function KenzieDevelopmentChat({ memberName }: { memberName: string }) {

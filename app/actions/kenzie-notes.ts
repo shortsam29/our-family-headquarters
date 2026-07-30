@@ -29,11 +29,46 @@ export async function markKenzieNoteRead(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+export async function markAllKenzieNotesRead() {
+  const context = await requireCurrentHouseholdContext();
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return;
+  await supabase.from("kenzie_notes").update({ read_at: new Date().toISOString() })
+    .eq("household_id", context.householdId)
+    .eq("recipient_member_id", context.familyMemberId)
+    .is("read_at", null)
+    .is("archived_at", null);
+  revalidatePath("/my-headquarters");
+  revalidatePath("/notifications");
+  revalidatePath("/", "layout");
+}
+
+export async function archiveKenzieNote(formData: FormData) {
+  const noteId = noteIdSchema.safeParse(formData.get("noteId"));
+  if (!noteId.success) return;
+  const context = await requireCurrentHouseholdContext();
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return;
+  await supabase.from("kenzie_notes").update({
+    archived_at: new Date().toISOString(),
+    read_at: new Date().toISOString(),
+  })
+    .eq("id", noteId.data)
+    .eq("household_id", context.householdId)
+    .eq("recipient_member_id", context.familyMemberId);
+  revalidatePath("/my-headquarters");
+  revalidatePath("/notifications");
+  revalidatePath("/", "layout");
+}
+
 export async function createKenzieNoteForMember(input: unknown) {
   const values = createSchema.safeParse(input);
   if (!values.success) return { ok: false as const, reason: "invalid_input" as const };
   const context = await requireCurrentHouseholdContext();
-  if (!["household_manager", "parent"].includes(context.role)) return { ok: false as const, reason: "forbidden" as const };
+  const self = values.data.recipientMemberId === context.familyMemberId;
+  if (!self && !["household_manager", "parent"].includes(context.role)) {
+    return { ok: false as const, reason: "forbidden" as const };
+  }
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: false as const, reason: "unavailable" as const };
   const { data: recipient } = await supabase

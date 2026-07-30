@@ -19,6 +19,7 @@ export async function getMyKenzieNotes(context: CurrentHouseholdContext): Promis
     .select("id,title,message,related_destination,created_at,read_at")
     .eq("household_id", context.householdId)
     .eq("recipient_member_id", context.familyMemberId)
+    .is("archived_at", null)
     .order("created_at", { ascending: false })
     .limit(20);
   if (error) return [];
@@ -30,17 +31,4 @@ export async function getMyKenzieNotes(context: CurrentHouseholdContext): Promis
     createdAt: note.created_at,
     read: Boolean(note.read_at),
   }));
-}
-
-export async function getMyUnreadNotificationCount(context: CurrentHouseholdContext): Promise<number> {
-  if (context.source !== "supabase") return 0;
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) return 0;
-  const result = await supabase
-    .from("kenzie_notes")
-    .select("id", { count: "exact", head: true })
-    .eq("household_id", context.householdId)
-    .eq("recipient_member_id", context.familyMemberId)
-    .is("read_at", null);
-  return result.error ? 0 : result.count ?? 0;
 }

@@ -77,6 +77,20 @@ describe("Kenzie notes actions", () => {
     })).toEqual({ ok: false, reason: "forbidden" });
   });
 
+  it("allows a regular member to create a note for themselves", async () => {
+    mocks.context.mockResolvedValue({ ...manager, role: "child" });
+    const memberships = membershipQuery({ family_member_id: memberId });
+    const insert = vi.fn().mockResolvedValue({ error: null });
+    mocks.createClient.mockResolvedValue({
+      from: vi.fn((table: string) => table === "household_memberships" ? memberships : { insert }),
+    });
+    expect(await createKenzieNoteForMember({
+      recipientMemberId: memberId,
+      title: "Remember",
+      message: "Bring my library book.",
+    })).toEqual({ ok: true });
+  });
+
   it("marks a note read only for the authenticated recipient", async () => {
     const query = {
       update: vi.fn(() => query),

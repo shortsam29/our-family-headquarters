@@ -66,6 +66,22 @@ describe("Kenzie live action boundary", () => {
     });
   });
 
+  it("interprets direct note and one-time reminder requests as controlled proposals", () => {
+    const now = new Date("2030-01-07T12:00:00");
+    expect(detectKenzieAction("Leave Robbie a note that practice is tomorrow.")).toEqual({
+      kind: "create_note_request",
+      recipientSearch: "Robbie",
+      message: "practice is tomorrow",
+    });
+    expect(detectKenzieAction("Remind me Friday at 4 pm to start dinner.", now)).toEqual({
+      kind: "create_reminder_request",
+      recipientSearch: "me",
+      message: "start dinner",
+      date: "2030-01-11",
+      time: "16:00",
+    });
+  });
+
   it("requires confirmation-compatible structured calendar and meal proposals", () => {
     expect(kenzieActionProposalSchema.safeParse({
       kind: "create_calendar_event",
