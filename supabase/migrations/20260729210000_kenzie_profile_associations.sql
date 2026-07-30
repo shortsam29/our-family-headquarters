@@ -4,7 +4,7 @@ alter table public.family_members
 create table public.kenzie_profile_associations (
   family_member_id uuid primary key,
   household_id uuid not null,
-  profile_key text not null check (profile_key in ('samantha', 'jason', 'robbie', 'braeden', 'fran')),
+  profile_key text check (profile_key in ('samantha', 'jason', 'robbie', 'braeden', 'fran')),
   assigned_by_member_id uuid not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

@@ -29,6 +29,10 @@ describe("Kenzie managed profile resolution", () => {
     expect(resolveMemberProfileFromSources(memberId, "Member", { status: "found", profileKey: "not-approved" }, { [memberId]: "robbie" }).key).toBe("default");
   });
 
+  it("treats an explicitly cleared database association as the safe default", () => {
+    expect(resolveMemberProfileFromSources(memberId, "Member", { status: "found", profileKey: null }, { [memberId]: "robbie" }).key).toBe("default");
+  });
+
   it("uses the safe default when no association or compatibility mapping exists", () => {
     expect(resolveMemberProfileFromSources(memberId, "Member", { status: "missing" }, {}).key).toBe("default");
   });

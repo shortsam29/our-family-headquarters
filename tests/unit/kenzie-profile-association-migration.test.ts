@@ -6,7 +6,7 @@ const migration = readFileSync("supabase/migrations/20260729210000_kenzie_profil
 describe("Kenzie profile association migration", () => {
   it("stores only a constrained stable profile association and audit metadata", () => {
     expect(migration).toContain("create table public.kenzie_profile_associations");
-    expect(migration).toContain("profile_key text not null check");
+    expect(migration).toContain("profile_key text check");
     expect(migration).toContain("assigned_by_member_id uuid not null");
     expect(migration).not.toMatch(/traits|interests|motivations|goals|conversation|memory/i);
   });

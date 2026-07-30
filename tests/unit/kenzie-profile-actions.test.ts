@@ -26,15 +26,10 @@ function clientWithMembership(found = true) {
   const maybeSingle = vi.fn().mockResolvedValue({ data: found ? { family_member_id: memberId } : null });
   const membershipQuery = { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), maybeSingle };
   const upsert = vi.fn().mockResolvedValue({ error: null });
-  const deleteQuery = { delete: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), then: undefined };
-  deleteQuery.eq.mockImplementation(function () {
-    if (deleteQuery.eq.mock.calls.length === 2) return Promise.resolve({ error: null });
-    return deleteQuery;
-  });
   const from = vi.fn((table: string) => table === "household_memberships"
     ? membershipQuery
-    : { upsert, delete: deleteQuery.delete, eq: deleteQuery.eq });
-  return { client: { from }, upsert, deleteQuery };
+    : { upsert });
+  return { client: { from }, upsert };
 }
 
 describe("Kenzie profile assignment action", () => {
@@ -72,6 +67,6 @@ describe("Kenzie profile assignment action", () => {
     const setup = clientWithMembership();
     mocks.client.mockResolvedValue(setup.client);
     expect(await saveKenzieProfileAssociation({}, form(""))).toMatchObject({ saved: true });
-    expect(setup.deleteQuery.delete).toHaveBeenCalled();
+    expect(setup.upsert).toHaveBeenCalledWith(expect.objectContaining({ profile_key: null }), { onConflict: "family_member_id" });
   });
 });
