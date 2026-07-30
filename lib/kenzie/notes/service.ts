@@ -37,7 +37,7 @@ export async function getMyUnreadNotificationCount(context: CurrentHouseholdCont
   const supabase = await createSupabaseServerClient();
   if (!supabase) return 0;
   const result = await supabase
-    .from("internal_notifications")
+    .from("kenzie_notes")
     .select("id", { count: "exact", head: true })
     .eq("household_id", context.householdId)
     .eq("recipient_member_id", context.familyMemberId)

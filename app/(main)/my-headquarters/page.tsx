@@ -14,12 +14,14 @@ import { getPrivatePersonalTools } from "@/lib/data/personal-tools";
 import { getPersonalizedPlannerItems, isJason } from "@/lib/data/personalized-planner";
 import { myDayData } from "@/lib/features/mock-data";
 import { toZonedDateIso } from "@/lib/today/date";
+import { getMyKenzieNotes } from "@/lib/kenzie/notes/service";
+import { PersonalKenzieNotes } from "@/components/kenzie/PersonalKenzieNotes";
 
 export default async function MyHeadquartersPage({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const context = await requireCurrentHouseholdContext();
   const feedback = await searchParams;
   const jason = isJason(context.displayName);
-  const [schedule, tasks, signals, personalTools, jasonItems] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), getPrivatePersonalTools(context), jason ? getPersonalizedPlannerItems(context, ["training", "fight"]) : Promise.resolve([])]);
+  const [schedule, tasks, signals, personalTools, jasonItems, kenzieNotes] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), getPrivatePersonalTools(context), jason ? getPersonalizedPlannerItems(context, ["training", "fight"]) : Promise.resolve([]), getMyKenzieNotes(context)]);
   const reminders = context.source === "development-fixture" ? myDayData.reminders : { status: "empty" as const };
   const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
   const today = toZonedDateIso(new Date(), context.timeZone);
@@ -56,6 +58,10 @@ export default async function MyHeadquartersPage({ searchParams }: { searchParam
         <TodaySectionState state={reminders} emptyTitle="Nothing to remember" emptyMessage="Your reminder space is clear." loadingLabel="Checking reminders" errorMessage="Personal reminders are temporarily unavailable.">
           {(items) => <ResponsiveGrid columns={2}>{items.map((reminder) => <SummaryCard key={reminder.id} title={reminder.title} detail={reminder.when} variant="neutral" />)}</ResponsiveGrid>}
         </TodaySectionState>
+      </FeatureSection>
+
+      <FeatureSection title="Notes from Kenzie" description="Private notes addressed only to your signed-in family profile.">
+        <PersonalKenzieNotes notes={kenzieNotes} />
       </FeatureSection>
 
       {personalTools.error ? <p role="alert">{personalTools.error}</p> : null}
