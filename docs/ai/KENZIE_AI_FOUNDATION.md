@@ -4,6 +4,10 @@
 
 Kenzie Phase 2 is server-only and composable. `lib/kenzie/core` contains stable identity, household values, dates, and context. `profiles` contains family intelligence plus an authenticated member-ID registry. `policies` owns conversation, permission, and memory rules. `prompts` assembles deterministic instructions. `conversation` separates Kenzie business rules from the OpenAI provider.
 
+The shared platform foundation lives in `lib/kenzie/platform`. Context providers receive the authenticated household context and return only authorized structured data. Provider output is labeled as untrusted data when added to a conversation prompt. The action executor validates input, authentication, household boundaries, and authorization before calling an application service; it never gives the model a database client.
+
+Private Notes from Kenzie and internal notification records have recipient-scoped persistence and RLS. They store message delivery state, not conversation history or personality data. External push, email, SMS, autonomous note generation, durable memory, and live application providers remain disabled.
+
 The existing deterministic `lib/kenzie/intelligence.ts` remains unchanged.
 
 ## Runtime flow
