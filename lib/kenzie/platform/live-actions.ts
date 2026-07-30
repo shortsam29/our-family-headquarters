@@ -377,6 +377,9 @@ export async function handleImmediateKenzieAction(context: CurrentHouseholdConte
     revalidatePath("/shopping");
     return { status: "completed", message: `${action.name} was added to the ${action.listType} list.` };
   }
+  if (action.kind !== "complete_own_chore") {
+    return { status: "failed", message: "That household action is not available." };
+  }
   const { data: assignments, error: assignmentError } = await supabase.from("task_assignments")
     .select("id,tasks!inner(title,category,active)")
     .eq("family_member_id", context.familyMemberId)
