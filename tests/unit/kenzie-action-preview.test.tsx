@@ -39,6 +39,35 @@ describe("Kenzie action preview", () => {
     expect(screen.getByRole("button", { name: "Don't save" })).toBeInTheDocument();
   });
 
+  it("cancels a proposed write without sending a confirmation request", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        status: "proposal",
+        message: "Create this event?",
+        proposal: {
+          kind: "create_calendar_event",
+          title: "Science review",
+          date: "2030-01-08",
+          time: "14:00",
+        },
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<KenzieDevelopmentChat memberName="Family Member" />);
+    fireEvent.change(screen.getByLabelText("Message Kenzie"), {
+      target: { value: "Create a calendar event tomorrow at 2 PM called Science review" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+
+    await waitFor(() => expect(screen.getByText("Action preview")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Don't save" }));
+
+    await waitFor(() => expect(screen.queryByText("Action preview")).not.toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("shows an automatic-memory notice and sends an owner-scoped undo request", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({

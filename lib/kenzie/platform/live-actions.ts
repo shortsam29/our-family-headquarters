@@ -15,6 +15,7 @@ export const kenzieActionProposalSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     kind: z.literal("create_note"),
+    requestId: z.uuid(),
     recipientSearch: z.string().trim().min(1).max(120),
     recipientLabel: z.string().trim().min(1).max(120),
     title: z.string().trim().min(1).max(160),
@@ -47,7 +48,7 @@ type DetectedAction =
   | KenzieActionProposal
   | { kind: "add_shopping_item"; name: string; listType: "grocery" | "household" }
   | { kind: "complete_own_chore"; title: string }
-  | { kind: "create_note_request"; recipientSearch: string; message: string }
+  | { kind: "create_note_request"; recipientSearch: string; message: string; title?: string }
   | { kind: "create_reminder_request"; recipientSearch: string; message: string; date: string; time: string; recurrence?: "daily" | "weekly" | "monthly" | "yearly" }
   | { kind: "blocked_chore_change" }
   | { kind: "clarification"; message: string };
@@ -95,10 +96,33 @@ export function detectKenzieAction(message: string, now = new Date()): DetectedA
   if (/\b(skip|pause|reassign|reschedule|remove)\b.*\b(chore|task)\b|\b(chore|task)\b.*\b(skip|pause|reassign|reschedule|remove)\b/i.test(text)) {
     return { kind: "blocked_chore_change" };
   }
+  const titledSelfNote = text.match(/^(?:leave|save)\s+(?:me|myself)\s+a\s+note\s+titled\s+(.+?)\s+with\s+(?:the\s+)?message\s+(.+)$/i);
+  if (titledSelfNote) {
+    return {
+      kind: "create_note_request",
+      recipientSearch: "me",
+      message: titledSelfNote[2].trim(),
+      title: titledSelfNote[1].trim(),
+    };
+  }
   const note = text.match(/^leave\s+(.+?)\s+a\s+note\s+(?:that|saying)\s+(.+)$/i)
     ?? text.match(/^tell\s+(.+?)\s+(.+)$/i);
   if (note) return { kind: "create_note_request", recipientSearch: note[1].trim(), message: note[2].trim() };
 
+  const selfReminder = text.match(/^set\s+(?:a\s+)?reminder\s+(?:for\s+)?(today|tomorrow|(?:next\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|\d{4}-\d{2}-\d{2})(?:\s+at\s+(morning|afternoon|evening|noon|\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?\s+(?:called|titled|to)\s+(.+)$/i);
+  if (selfReminder) {
+    const date = resolveDatePhrase(selfReminder[1], now);
+    const time = resolveTimePhrase(selfReminder[2] ?? "morning");
+    if (date && time) {
+      return {
+        kind: "create_reminder_request",
+        recipientSearch: "me",
+        message: selfReminder[3].trim(),
+        date,
+        time,
+      };
+    }
+  }
   const reminder = text.match(/^remind\s+(.+?)\s+(today|tomorrow|(?:next\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|\d{4}-\d{2}-\d{2})(?:\s+at\s+(morning|afternoon|evening|noon|\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?\s+to\s+(.+)$/i)
     ?? text.match(/^remind\s+(.+?)\s+about\s+(.+?)\s+(today|tomorrow|(?:next\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|\d{4}-\d{2}-\d{2})(?:\s+at\s+(morning|afternoon|evening|noon|\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?$/i);
   if (reminder) {
@@ -141,6 +165,22 @@ export function detectKenzieAction(message: string, now = new Date()): DetectedA
   }
 
   const day = "(today|tomorrow|(?:next\\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|\\d{4}-\\d{2}-\\d{2})";
+  const createdCalendar = text.match(new RegExp(`^create\\s+(?:a\\s+)?calendar\\s+event\\s+${day}\\s+(?:at\\s+)?(morning|afternoon|evening|noon|\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)?)(?:\\s+called|\\s+titled)\\s+(.+)$`, "i"));
+  if (createdCalendar) {
+    const date = resolveDatePhrase(createdCalendar[1], now);
+    const time = resolveTimePhrase(createdCalendar[2]);
+    if (date && time) {
+      return { kind: "create_calendar_event", title: createdCalendar[3].trim(), date, time };
+    }
+  }
+  const rangedCalendar = text.match(new RegExp(`^create\\s+(?:a\\s+)?calendar\\s+event\\s+${day}\\s+from\\s+(morning|afternoon|evening|noon|\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)?)\\s+to\\s+(?:morning|afternoon|evening|noon|\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)?)(?:\\s+called|\\s+titled)\\s+(.+)$`, "i"));
+  if (rangedCalendar) {
+    const date = resolveDatePhrase(rangedCalendar[1], now);
+    const time = resolveTimePhrase(rangedCalendar[2]);
+    if (date && time) {
+      return { kind: "create_calendar_event", title: rangedCalendar[3].trim(), date, time };
+    }
+  }
   const calendar = text.match(new RegExp(`^(?:schedule|add|put)\\s+(.+?)(?:\\s+on)?\\s+${day}(?:\\s+at\\s+|\\s+)(morning|afternoon|evening|noon|\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)?)$`, "i"));
   if (calendar) {
     const date = resolveDatePhrase(calendar[2], now);
@@ -233,7 +273,24 @@ export async function executeKenzieProposal(context: CurrentHouseholdContext, ra
     if (recipient.status !== "found") return { status: "failed", message: "I could not safely resolve that note or reminder recipient." };
     if (!recipient.self && !administrative) return { status: "failed", message: "A parent or household manager needs to send that to another person." };
     if (proposal.data.kind === "create_note") {
+      const { data: duplicate, error: duplicateError } = await supabase.from("kenzie_notes")
+        .select("id")
+        .eq("household_id", context.householdId)
+        .eq("recipient_member_id", recipient.id)
+        .eq("title", proposal.data.title)
+        .eq("message", proposal.data.message)
+        .is("archived_at", null)
+        .limit(1)
+        .maybeSingle();
+      if (duplicateError) {
+        console.error("Kenzie note duplicate check failed", duplicateError.code, duplicateError.message);
+        return { status: "failed", message: "The note could not be safely checked before delivery." };
+      }
+      if (duplicate) {
+        return { status: "completed", message: `That note is already waiting for ${recipient.label}.` };
+      }
       const { error } = await supabase.from("kenzie_notes").insert({
+        id: proposal.data.requestId,
         household_id: context.householdId,
         recipient_member_id: recipient.id,
         title: proposal.data.title,
@@ -242,6 +299,9 @@ export async function executeKenzieProposal(context: CurrentHouseholdContext, ra
         created_by_kind: "household_member",
         created_by_member_id: context.familyMemberId,
       });
+      if (error?.code === "23505") {
+        return { status: "completed", message: `That note is already waiting for ${recipient.label}.` };
+      }
       if (error) {
         console.error("Kenzie note insert failed", error.code, error.message);
         return { status: "failed", message: "The note could not be delivered." };
@@ -341,9 +401,10 @@ export async function handleImmediateKenzieAction(context: CurrentHouseholdConte
     const proposal: KenzieActionProposal = action.kind === "create_note_request"
       ? {
           kind: "create_note",
+          requestId: randomUUID(),
           recipientSearch: action.recipientSearch,
           recipientLabel: recipient.label,
-          title: "A note for you",
+          title: action.title ?? "A note for you",
           message: action.message,
         }
       : {

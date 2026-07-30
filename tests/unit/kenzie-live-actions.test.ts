@@ -115,6 +115,59 @@ describe("Kenzie live actions", () => {
     }));
   });
 
+  it("creates a self note once and treats an exact retry as already delivered", async () => {
+    const noteInsert = vi.fn().mockResolvedValue({ error: null });
+    const noteQuery = {
+      select: vi.fn(() => noteQuery),
+      eq: vi.fn(() => noteQuery),
+      is: vi.fn(() => noteQuery),
+      limit: vi.fn(() => noteQuery),
+      maybeSingle: vi.fn()
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({ data: { id: "existing-note" }, error: null }),
+      insert: noteInsert,
+    };
+    mocks.createClient.mockResolvedValue({ from: vi.fn(() => noteQuery) });
+    const proposal = {
+      kind: "create_note" as const,
+      requestId: "00000000-0000-4000-8000-000000000077",
+      recipientSearch: "me",
+      recipientLabel: "Member",
+      title: "Tomorrow",
+      message: "Remember the permission slip",
+    };
+
+    expect(await executeKenzieProposal(manager, proposal)).toMatchObject({ status: "completed" });
+    expect(await executeKenzieProposal(manager, proposal)).toEqual({
+      status: "completed",
+      message: "That note is already waiting for Member.",
+    });
+    expect(noteInsert).toHaveBeenCalledTimes(1);
+    expect(noteInsert).toHaveBeenCalledWith(expect.objectContaining({
+      household_id: manager.householdId,
+      recipient_member_id: manager.familyMemberId,
+      created_by_member_id: manager.familyMemberId,
+    }));
+  });
+
+  it("treats a duplicate reminder retry as completed without a second row", async () => {
+    const reminderInsert = vi.fn().mockResolvedValue({ error: { code: "23505", message: "duplicate" } });
+    mocks.createClient.mockResolvedValue({ from: vi.fn(() => ({ insert: reminderInsert })) });
+
+    expect(await executeKenzieProposal(manager, {
+      kind: "create_reminder",
+      recipientSearch: "me",
+      recipientLabel: "Member",
+      message: "Review the family calendar",
+      date: "2030-01-08",
+      time: "09:00",
+    })).toEqual({
+      status: "completed",
+      message: "That reminder is already set for Member.",
+    });
+    expect(reminderInsert).toHaveBeenCalledTimes(1);
+  });
+
   it("marks only a matching chore assigned to the authenticated member", async () => {
     const query = {
       select: vi.fn(() => query),

@@ -69,6 +69,22 @@ describe("Kenzie live action boundary", () => {
     });
   });
 
+  it("routes natural production calendar wording into the controlled confirmation flow", () => {
+    const now = new Date("2030-01-07T12:00:00");
+    expect(detectKenzieAction("Create a calendar event tomorrow at 2:00 PM called Science review.", now)).toEqual({
+      kind: "create_calendar_event",
+      title: "Science review",
+      date: "2030-01-08",
+      time: "14:00",
+    });
+    expect(detectKenzieAction("Create a calendar event tomorrow from 2:00 PM to 2:30 PM called Science review.", now)).toEqual({
+      kind: "create_calendar_event",
+      title: "Science review",
+      date: "2030-01-08",
+      time: "14:00",
+    });
+  });
+
   it("asks for one missing calendar detail instead of guessing", () => {
     expect(detectKenzieAction("Add dentist appointment Friday.")).toEqual({
       kind: "clarification",
@@ -97,6 +113,19 @@ describe("Kenzie live action boundary", () => {
       date: "2030-01-07",
       time: "07:00",
       recurrence: "daily",
+    });
+    expect(detectKenzieAction("Set a reminder for tomorrow at 9:00 AM called Review the family calendar.", now)).toEqual({
+      kind: "create_reminder_request",
+      recipientSearch: "me",
+      message: "Review the family calendar",
+      date: "2030-01-08",
+      time: "09:00",
+    });
+    expect(detectKenzieAction("Leave me a note titled Tomorrow with the message Remember the permission slip.", now)).toEqual({
+      kind: "create_note_request",
+      recipientSearch: "me",
+      title: "Tomorrow",
+      message: "Remember the permission slip",
     });
   });
 
