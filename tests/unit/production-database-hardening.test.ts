@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { canUsePersonalizedPlanner } from "@/lib/data/personalized-planner";
+import { canUseJasonPlanner, canUsePersonalizedPlanner } from "@/lib/data/personalized-planner";
 
 const migration = readFileSync(
   "supabase/migrations/20260730060000_production_authorization_api_grants.sql",
@@ -18,6 +18,12 @@ describe("production database authorization hardening", () => {
     expect(canUsePersonalizedPlanner("caregiver")).toBe(false);
     expect(canUsePersonalizedPlanner("guest")).toBe(false);
     expect(migration).not.toContain("display_name");
+  });
+
+  it("shows firefighter training and fights only for the trusted Jason profile", () => {
+    expect(canUseJasonPlanner("jason")).toBe(true);
+    expect(canUseJasonPlanner("samantha")).toBe(false);
+    expect(canUseJasonPlanner("default")).toBe(false);
   });
 
   it("requires the authenticated user, member, household, and adult role", () => {

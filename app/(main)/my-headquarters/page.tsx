@@ -12,16 +12,18 @@ import { requireCurrentHouseholdContext } from "@/lib/auth/context";
 import { getCurrentMemberTasks, getKenzieGuidance, getScheduleData } from "@/lib/data/core";
 import { getDomainSignals } from "@/lib/data/domains";
 import { getPrivatePersonalTools } from "@/lib/data/personal-tools";
-import { canUsePersonalizedPlanner, getPersonalizedPlannerItems } from "@/lib/data/personalized-planner";
+import { canUseJasonPlanner, getPersonalizedPlannerItems } from "@/lib/data/personalized-planner";
 import { toZonedDateIso } from "@/lib/today/date";
 import { getMyKenzieNotes } from "@/lib/kenzie/notes/service";
 import { PersonalKenzieNotes } from "@/components/kenzie/PersonalKenzieNotes";
 import { getMyReminders } from "@/lib/kenzie/notifications/service";
+import { resolveAuthenticatedMemberProfile } from "@/lib/kenzie/profiles/association";
 
 export default async function MyHeadquartersPage({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const context = await requireCurrentHouseholdContext();
   const feedback = await searchParams;
-  const canUsePlanner = canUsePersonalizedPlanner(context.role);
+  const profile = await resolveAuthenticatedMemberProfile(context);
+  const canUsePlanner = canUseJasonPlanner(profile.key);
   const [schedule, tasks, signals, personalTools, plannerItems, kenzieNotes, reminders] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), getPrivatePersonalTools(context), canUsePlanner ? getPersonalizedPlannerItems(context, ["training", "fight"]) : Promise.resolve([]), getMyKenzieNotes(context), getMyReminders(context)]);
   const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
   const today = toZonedDateIso(new Date(), context.timeZone);
