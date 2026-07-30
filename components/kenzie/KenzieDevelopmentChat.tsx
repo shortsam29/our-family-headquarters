@@ -77,7 +77,7 @@ export function KenzieDevelopmentChat({ memberName, memoryEnabled = false }: { m
   }, [messages, sending, pendingProposal]);
 
   async function post(body: Record<string, unknown>) {
-    if (sending) return;
+    if (sending) return null;
     setError(null);
     setLastRequest(body);
     setSending(true);
@@ -90,7 +90,7 @@ export function KenzieDevelopmentChat({ memberName, memoryEnabled = false }: { m
       const result = (await response.json()) as ChatResponse;
       if (!response.ok || !result.ok) {
         setError(result.message || "Kenzie could not answer right now.");
-        return;
+        return null;
       }
       setMessages((current) => [...current, {
         role: "assistant",
@@ -101,8 +101,10 @@ export function KenzieDevelopmentChat({ memberName, memoryEnabled = false }: { m
       setPendingProposal(result.status === "proposal" && result.proposal ? result.proposal : null);
       if (result.conversationMemoryPaused) setConversationMemoryDisabled(true);
       setLastRequest(null);
+      return result;
     } catch {
       setError("Kenzie could not answer right now. Your message was not saved.");
+      return null;
     } finally {
       setSending(false);
     }
@@ -115,15 +117,48 @@ export function KenzieDevelopmentChat({ memberName, memoryEnabled = false }: { m
     setMessages((current) => [...current, { role: "user", content: value }]);
     setDraft("");
     setPendingProposal(null);
-    await post({
+    const messageId = crypto.randomUUID();
+    const result = await post({
       message: value,
       history,
       conversationId: conversationId.current,
-      messageId: crypto.randomUUID(),
+      messageId,
       preventMemory,
       conversationMemoryDisabled,
     });
+    if (result?.ok && memoryEnabled && !preventMemory && !conversationMemoryDisabled) {
+      void extractMemory(value, messageId);
+    }
     setPreventMemory(false);
+  }
+
+  async function extractMemory(message: string, messageId: string) {
+    try {
+      const response = await fetch("/api/kenzie/memory/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          conversationId: conversationId.current,
+          messageId,
+        }),
+      });
+      if (!response.ok) return;
+      const result = (await response.json()) as Pick<ChatResponse, "memoryNotice">;
+      if (!result.memoryNotice) return;
+      setMessages((current) => {
+        const next = [...current];
+        for (let index = next.length - 1; index >= 0; index -= 1) {
+          if (next[index].role === "assistant") {
+            next[index] = { ...next[index], memoryNotice: result.memoryNotice };
+            break;
+          }
+        }
+        return next;
+      });
+    } catch {
+      // Memory is optional and must never interrupt the main conversation.
+    }
   }
 
   async function send(event: FormEvent<HTMLFormElement>) {

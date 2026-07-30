@@ -8,13 +8,11 @@ import {
   kenzieActionProposalSchema,
 } from "@/lib/kenzie/platform/live-actions";
 import { detectMemoryCommand } from "@/lib/kenzie/memory/commands";
-import { extractDirectMemoryCandidates } from "@/lib/kenzie/memory/extract";
 import {
   deleteAllOwnedMemories,
   deleteOwnedMemory,
   forgetMatchingMemory,
   listActiveMemories,
-  saveMemoryCandidate,
   setMemorySettings,
 } from "@/lib/kenzie/memory/service";
 
@@ -112,32 +110,5 @@ export async function POST(request: Request) {
     message: parsed.data.message,
     history: parsed.data.history,
   });
-  let memoryNotice: { id: string; displayText: string } | undefined;
-  if (
-    result.ok
-    && parsed.data.conversationId
-    && parsed.data.messageId
-    && !parsed.data.preventMemory
-    && !parsed.data.conversationMemoryDisabled
-  ) {
-    const candidates = extractDirectMemoryCandidates(parsed.data.message, context.role);
-    if (candidates.length) {
-      try {
-        for (const candidate of candidates) {
-          const saved = await saveMemoryCandidate(context, candidate, {
-            conversationId: parsed.data.conversationId,
-            messageId: parsed.data.messageId,
-          });
-          if (saved && !memoryNotice) {
-            memoryNotice = { id: saved.id, displayText: saved.displayText };
-          }
-        }
-      } catch (error) {
-        console.error("Kenzie memory extraction failed", {
-          name: error instanceof Error ? error.name : "UnknownError",
-        });
-      }
-    }
-  }
-  return json(memoryNotice ? { ...result, memoryNotice } : result, result.ok ? 200 : 502);
+  return json(result, result.ok ? 200 : 502);
 }

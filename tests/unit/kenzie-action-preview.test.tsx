@@ -46,6 +46,12 @@ describe("Kenzie action preview", () => {
         json: async () => ({
           ok: true,
           message: "I can use simple examples.",
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
           memoryNotice: {
             id: "00000000-0000-4000-8000-000000000099",
             displayText: "You prefer explanations with simple examples.",
@@ -68,10 +74,29 @@ describe("Kenzie action preview", () => {
     expect(screen.getByRole("link", { name: "Review" })).toHaveAttribute("href", "/settings#kenzie-memory");
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    const undoBody = JSON.parse(String(fetchMock.mock.calls[1][1]?.body));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/kenzie/memory/extract");
+    const undoBody = JSON.parse(String(fetchMock.mock.calls[2][1]?.body));
     expect(undoBody).toEqual(expect.objectContaining({
       undoMemoryId: "00000000-0000-4000-8000-000000000099",
     }));
+  });
+
+  it("does not call extraction when the message opt-out is checked", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, message: "Here is an answer." }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<KenzieDevelopmentChat memberName="Family Member" memoryEnabled />);
+    fireEvent.change(screen.getByLabelText("Message Kenzie"), {
+      target: { value: "I prefer short answers." },
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Don't remember this message" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/kenzie/chat");
   });
 });
