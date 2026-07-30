@@ -1,0 +1,6 @@
+﻿const WINDOW_MS=5*60*1000;const MAX_REQUESTS=3;type RateLimitRecord={count:number;resetAt:number};const connectionTestRequests=new Map<string,RateLimitRecord>();const chatRequests=new Map<string,RateLimitRecord>();export type RateLimitResult={allowed:true;remaining:number}|{allowed:false;retryAfterSeconds:number};
+function take(map:Map<string,RateLimitRecord>,userId:string,now:number,windowMs:number,max:number):RateLimitResult{for(const[key,record]of map)if(record.resetAt<=now)map.delete(key);const current=map.get(userId);if(!current||current.resetAt<=now){map.set(userId,{count:1,resetAt:now+windowMs});return{allowed:true,remaining:max-1}}if(current.count>=max)return{allowed:false,retryAfterSeconds:Math.max(1,Math.ceil((current.resetAt-now)/1000))};current.count+=1;return{allowed:true,remaining:max-current.count}}
+export function takeConnectionTestRateLimit(userId:string,now=Date.now()){return take(connectionTestRequests,userId,now,WINDOW_MS,MAX_REQUESTS)}
+export function takeKenzieChatRateLimit(userId:string,now=Date.now()){return take(chatRequests,userId,now,60_000,10)}
+export function resetConnectionTestRateLimitForTests(){if(process.env.NODE_ENV==="test")connectionTestRequests.clear()}
+export function resetKenzieChatRateLimitForTests(){if(process.env.NODE_ENV==="test")chatRequests.clear()}
