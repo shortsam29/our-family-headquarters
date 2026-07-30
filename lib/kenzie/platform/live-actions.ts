@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { CurrentHouseholdContext } from "@/lib/auth/context";
 import { householdLocalDateTimeToIso } from "@/lib/schedule/event-input";
@@ -224,7 +224,10 @@ export async function executeKenzieProposal(context: CurrentHouseholdContext, ra
         created_by_kind: "household_member",
         created_by_member_id: context.familyMemberId,
       });
-      if (error) return { status: "failed", message: "The note could not be delivered." };
+      if (error) {
+        console.error("Kenzie note insert failed", error.code, error.message);
+        return { status: "failed", message: "The note could not be delivered." };
+      }
       revalidatePath("/my-headquarters");
       revalidatePath("/notifications");
       revalidatePath("/", "layout");
@@ -234,7 +237,9 @@ export async function executeKenzieProposal(context: CurrentHouseholdContext, ra
     const dedupeKey = createHash("sha256")
       .update(`${context.householdId}:${recipient.id}:${dueAt}:${proposal.data.message.trim().toLowerCase()}`)
       .digest("hex");
-    const { data: reminder, error } = await supabase.from("household_reminders").upsert({
+    const reminderId = randomUUID();
+    const { error } = await supabase.from("household_reminders").insert({
+      id: reminderId,
       household_id: context.householdId,
       recipient_member_id: recipient.id,
       message: proposal.data.message,
@@ -244,20 +249,14 @@ export async function executeKenzieProposal(context: CurrentHouseholdContext, ra
       related_destination: "/my-headquarters",
       created_by_member_id: context.familyMemberId,
       dedupe_key: dedupeKey,
-    }, { onConflict: "household_id,recipient_member_id,dedupe_key" }).select("id").single();
-    if (error || !reminder) return { status: "failed", message: "The reminder could not be saved." };
-    const { error: notificationError } = await supabase.from("internal_notifications").upsert({
-      household_id: context.householdId,
-      recipient_member_id: recipient.id,
-      kind: "reminder",
-      title: "Reminder",
-      body: proposal.data.message,
-      related_destination: "/my-headquarters",
-      source_reminder_id: reminder.id,
-      created_by_member_id: context.familyMemberId,
-      dedupe_key: `reminder:${dedupeKey}`,
-    }, { onConflict: "household_id,recipient_member_id,dedupe_key" });
-    if (notificationError) return { status: "failed", message: "The reminder was saved, but its notification could not be prepared." };
+    });
+    if (error?.code === "23505") {
+      return { status: "completed", message: `That reminder is already set for ${recipient.label}.` };
+    }
+    if (error) {
+      console.error("Kenzie reminder insert failed", error.code, error.message);
+      return { status: "failed", message: "The reminder could not be saved." };
+    }
     revalidatePath("/my-headquarters");
     revalidatePath("/notifications");
     revalidatePath("/", "layout");

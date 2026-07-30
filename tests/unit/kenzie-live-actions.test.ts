@@ -80,6 +80,41 @@ describe("Kenzie live actions", () => {
     }));
   });
 
+  it("creates a reminder without requiring cross-recipient read access", async () => {
+    const reminderInsert = vi.fn().mockResolvedValue({ error: null });
+    const recipientQuery = {
+      select: vi.fn(() => recipientQuery),
+      eq: vi.fn(() => recipientQuery),
+      ilike: vi.fn(() => recipientQuery),
+      limit: vi.fn().mockResolvedValue({
+        data: [{
+          family_member_id: "00000000-0000-4000-8000-000000000099",
+          family_members: { display_name: "Other Member" },
+        }],
+        error: null,
+      }),
+    };
+    mocks.createClient.mockResolvedValue({
+      from: vi.fn((table: string) => table === "household_memberships"
+        ? recipientQuery
+        : { insert: reminderInsert }),
+    });
+
+    expect(await executeKenzieProposal(manager, {
+      kind: "create_reminder",
+      recipientSearch: "Other Member",
+      recipientLabel: "Other Member",
+      message: "Practice starts soon",
+      date: "2030-01-02",
+      time: "17:00",
+    })).toMatchObject({ status: "completed" });
+    expect(reminderInsert).toHaveBeenCalledWith(expect.objectContaining({
+      household_id: manager.householdId,
+      recipient_member_id: "00000000-0000-4000-8000-000000000099",
+      created_by_member_id: manager.familyMemberId,
+    }));
+  });
+
   it("marks only a matching chore assigned to the authenticated member", async () => {
     const query = {
       select: vi.fn(() => query),
