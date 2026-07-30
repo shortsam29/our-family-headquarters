@@ -117,7 +117,7 @@ export function detectKenzieAction(message: string, now = new Date()): DetectedA
     if (match) {
       if (
         pattern === shoppingPatterns[shoppingPatterns.length - 1]
-        && /\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{4}-\d{2}-\d{2})$/i.test(match[1])
+        && /\b(today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{4}-\d{2}-\d{2})(?:\s+(?:at\s+)?(?:morning|afternoon|evening|noon|\d{1,2}(?::\d{2})?\s*(?:am|pm)?))?$/i.test(match[1])
       ) continue;
       return {
         kind: "add_shopping_item",

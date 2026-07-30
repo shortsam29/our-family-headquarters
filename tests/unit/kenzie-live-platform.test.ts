@@ -47,6 +47,12 @@ describe("Kenzie live action boundary", () => {
       date: "2030-01-08",
       time: "17:00",
     });
+    expect(detectKenzieAction("Add a dentist appointment Friday morning.", now)).toEqual({
+      kind: "create_calendar_event",
+      title: "a dentist appointment",
+      date: "2030-01-11",
+      time: "09:00",
+    });
     expect(detectKenzieAction("Plan spaghetti for Friday.", now)).toEqual({
       kind: "save_meal",
       mealType: "dinner",
