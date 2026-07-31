@@ -18,6 +18,7 @@ import { getMyKenzieNotes } from "@/lib/kenzie/notes/service";
 import { PersonalKenzieNotes } from "@/components/kenzie/PersonalKenzieNotes";
 import { getMyReminders } from "@/lib/kenzie/notifications/service";
 import { resolveAuthenticatedMemberProfile } from "@/lib/kenzie/profiles/association";
+import { formatScheduleDate, splitPersonalSchedule } from "@/lib/data/personal-schedule";
 
 export default async function MyHeadquartersPage({ searchParams }: { searchParams: Promise<{ status?: string; error?: string }> }) {
   const context = await requireCurrentHouseholdContext();
@@ -27,6 +28,7 @@ export default async function MyHeadquartersPage({ searchParams }: { searchParam
   const [schedule, tasks, signals, personalTools, plannerItems, kenzieNotes, reminders] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), getPrivatePersonalTools(context), canUsePlanner ? getPersonalizedPlannerItems(context, ["training", "fight"]) : Promise.resolve([]), getMyKenzieNotes(context), getMyReminders(context)]);
   const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
   const today = toZonedDateIso(new Date(), context.timeZone);
+  const personalSchedule = splitPersonalSchedule(schedule, today);
 
   return (
     <FeaturePage>
@@ -36,15 +38,21 @@ export default async function MyHeadquartersPage({ searchParams }: { searchParam
 
       <FeatureSection title="Your day at a glance">
         <ResponsiveGrid columns={3}>
-          <SummaryCard title="Schedule" detail={schedule.status === "populated" ? `${schedule.data.length} relevant events` : "Nothing scheduled"} variant="sage" />
+          <SummaryCard title="Today’s schedule" detail={personalSchedule.today.status === "populated" ? `${personalSchedule.today.data.length} ${personalSchedule.today.data.length === 1 ? "event" : "events"} today` : "Nothing scheduled today"} variant="sage" />
           <SummaryCard title="Tasks" detail={tasks.status === "populated" ? `${tasks.data.length} items for you` : "Your list is clear"} variant="blush" />
           <SummaryCard title="Reminders" detail={reminders.length ? `${reminders.length} upcoming` : "Nothing urgent"} variant="neutral" />
         </ResponsiveGrid>
       </FeatureSection>
 
-      <FeatureSection title="Your schedule" description="Only events relevant to this family member appear here.">
-        <TodaySectionState state={schedule} emptyTitle="Your schedule is open" emptyMessage="There are no personal events waiting today." loadingLabel="Preparing your schedule" errorMessage="Your schedule is temporarily unavailable.">
-          {(events) => <ResponsiveGrid columns={2}>{events.map((event) => <SummaryCard key={event.id} title={event.title} detail={event.allDay ? "All day" : event.startTime ?? "Time not set"} meta={event.location} />)}</ResponsiveGrid>}
+      <FeatureSection title="Today’s schedule" description="Events scheduled for your current day appear here.">
+        <TodaySectionState state={personalSchedule.today} emptyTitle="Today is open" emptyMessage="There are no personal events scheduled for today." loadingLabel="Preparing today’s schedule" errorMessage="Your schedule is temporarily unavailable.">
+          {(events) => <ResponsiveGrid columns={2}>{events.map((event) => <SummaryCard key={event.id} title={event.title} detail={`${formatScheduleDate(event.date)} · ${event.allDay ? "All day" : event.startTime ?? "Time not set"}`} meta={event.location} />)}</ResponsiveGrid>}
+        </TodaySectionState>
+      </FeatureSection>
+
+      <FeatureSection title="Upcoming schedule" description="Your future appointments and events appear here in date order.">
+        <TodaySectionState state={personalSchedule.upcoming} emptyTitle="Nothing coming up" emptyMessage="There are no future personal events scheduled." loadingLabel="Preparing your upcoming schedule" errorMessage="Your upcoming schedule is temporarily unavailable.">
+          {(events) => <ResponsiveGrid columns={2}>{events.map((event) => <SummaryCard key={event.id} title={event.title} detail={`${formatScheduleDate(event.date)} · ${event.allDay ? "All day" : event.startTime ?? "Time not set"}`} meta={event.location} />)}</ResponsiveGrid>}
         </TodaySectionState>
       </FeatureSection>
 
