@@ -10,6 +10,7 @@ import { requireCurrentHouseholdContext } from "@/lib/auth/context";
 import { getScheduleData, getTodayExperienceData } from "@/lib/data/core";
 import { getFamilyCommunication } from "@/lib/data/communications";
 import { toZonedDateIso } from "@/lib/today/date";
+import { formatScheduleDate, splitHouseholdSchedule } from "@/lib/data/personal-schedule";
 import type { HouseholdPreview, SectionState } from "@/types/today";
 import styles from "./page.module.css";
 
@@ -31,7 +32,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
   const feedback = await searchParams;
   const [todayData, scheduleState, communication] = await Promise.all([getTodayExperienceData(context), getScheduleData(context), getFamilyCommunication(context)]);
   const todayIso = toZonedDateIso(new Date(), context.timeZone);
-  const upcomingEvents = scheduleState.status === "populated" ? scheduleState.data.filter((event) => event.date > todayIso).slice(0, 5) : [];
+  const householdSchedule = splitHouseholdSchedule(scheduleState, todayIso);
   const canManage = ["household_manager", "parent"].includes(context.role);
   const householdPreviews: Array<{ state: SectionState<HouseholdPreview>; title: string; emptyMessage: string }> = [
     { state: todayData.grocery, title: "Priority Grocery Items", emptyMessage: "No priority groceries are waiting." },
@@ -58,7 +59,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
               <div className={styles.primaryGrid}>
                 <TodayCard title="Today’s Schedule" eyebrow="Today’s schedule" className={styles.scheduleCard}>
                   <TodaySectionState
-                    state={todayData.schedule}
+                    state={householdSchedule.today}
                     emptyTitle="No events today"
                     emptyMessage="The day is beautifully open. Nothing has been overlooked."
                     loadingLabel="Checking today’s schedule"
@@ -66,7 +67,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                   >
                     {(items) => (
                       <ul className={styles.scheduleList}>
-                        {items.map((item) => <li key={item.id}><span>{item.daypart}</span><p>{item.title}</p></li>)}
+                        {items.map((item) => <li key={item.id}><span>{item.allDay ? "All day" : item.startTime ?? "Time not set"}</span><p>{item.title}</p></li>)}
                       </ul>
                     )}
                   </TodaySectionState>
@@ -120,8 +121,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
             </section>
 
             <section className={styles.upcomingRegion} aria-labelledby="upcoming-events-title">
-              <div className={styles.regionHeading}><h2 id="upcoming-events-title">Upcoming Events</h2><Link href="/schedule">Open calendar →</Link></div>
-              {upcomingEvents.length ? <div className={styles.upcomingList}>{upcomingEvents.map((event) => <Card key={event.id}><time dateTime={event.date}>{event.date}</time><h3>{event.title}</h3><p>{event.allDay ? "All day" : event.startTime}</p></Card>)}</div> : <div className={styles.actionableEmpty}><p>No upcoming events.</p><Link href="/schedule">Add Event</Link></div>}
+              <div className={styles.regionHeading}><h2 id="upcoming-events-title">Upcoming Schedule · Next 5 Days</h2><Link href="/schedule">Open calendar →</Link></div>
+              {householdSchedule.upcoming.status === "populated" ? <div className={styles.upcomingList}>{householdSchedule.upcoming.data.map((event) => <Card key={event.id}><time dateTime={event.date}>{formatScheduleDate(event.date)}</time><h3>{event.title}</h3><p>{event.allDay ? "All day" : event.startTime ?? "Time not set"}{event.location ? ` · ${event.location}` : ""}</p></Card>)}</div> : <div className={styles.actionableEmpty}><p>No events scheduled for the next five days.</p><Link href="/schedule">Add Event</Link></div>}
             </section>
 
             <section className={styles.supportingRegion} id="family-hub" aria-label="Supporting household information">

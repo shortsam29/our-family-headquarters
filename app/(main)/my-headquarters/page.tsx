@@ -28,7 +28,7 @@ export default async function MyHeadquartersPage({ searchParams }: { searchParam
   const [schedule, tasks, signals, personalTools, plannerItems, kenzieNotes, reminders] = await Promise.all([getScheduleData(context), getCurrentMemberTasks(context), getDomainSignals(context), getPrivatePersonalTools(context), canUsePlanner ? getPersonalizedPlannerItems(context, ["training", "fight"]) : Promise.resolve([]), getMyKenzieNotes(context), getMyReminders(context)]);
   const kenzie = await getKenzieGuidance(context, schedule, tasks, signals);
   const today = toZonedDateIso(new Date(), context.timeZone);
-  const personalSchedule = splitPersonalSchedule(schedule, today);
+  const personalSchedule = splitPersonalSchedule(schedule, today, context.familyMemberId);
 
   return (
     <FeaturePage>
